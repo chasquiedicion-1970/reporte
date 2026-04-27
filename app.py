@@ -6,24 +6,32 @@ import plotly.express as px
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Kioscos IA - Mantenimiento", layout="wide")
 
-# Título con indicador de versión para saber si Streamlit se actualizó
-st.title("📊 Estado de Infraestructura - Kioscos IA (Versión 5)")
+st.title("📊 Estado de Infraestructura - Kioscos IA (Versión 6)")
 
-# Eliminamos la memoria caché temporalmente para forzar lectura de datos frescos
 def cargar_datos_limpios():
+    # Buscamos primero un Excel y luego un CSV
+    archivos_excel = glob.glob("*.xlsx")
     archivos_csv = glob.glob("*.csv")
-    if archivos_csv:
-        # utf-8-sig elimina cualquier formato invisible de Microsoft Forms
-        df = pd.read_csv(archivos_csv[0], encoding='utf-8-sig')
-        # Limpiamos todos los nombres de columnas de espacios accidentales
-        df.columns = df.columns.str.strip()
-        return df
-    return None
+    
+    df = None
+    try:
+        if archivos_excel:
+            df = pd.read_excel(archivos_excel[0])
+        elif archivos_csv:
+            df = pd.read_csv(archivos_csv[0], encoding='utf-8-sig')
+            
+        if df is not None:
+            # Limpiamos nombres de columnas de espacios accidentales
+            df.columns = df.columns.str.strip()
+    except Exception as e:
+        st.error(f"Error al leer el archivo: {e}")
+        
+    return df
 
 df = cargar_datos_limpios()
 
 if df is not None:
-    # Detectamos las columnas dinámicamente sin importar si tienen espacios o tildes raras
+    # Detectamos las columnas dinámicamente
     col_ubicacion = [c for c in df.columns if 'UBICAC' in c.upper()][0]
     col_fecha = [c for c in df.columns if 'FECHA' in c.upper()][0]
     
@@ -44,7 +52,6 @@ if df is not None:
         
         col_graf, col_met = st.columns([1, 2])
         
-        # Buscar columnas principales de infraestructura
         infra_cols_esperadas = ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'CABLEADO', 'ENERGIA', 'INTERNET', 'CAMARAS SEGURIDAD']
         infra_cols = [c for c in infra_cols_esperadas if c in df.columns]
         
@@ -78,7 +85,6 @@ if df is not None:
 
         st.divider()
         
-        # Búsqueda dinámica de las observaciones
         obs_col = [c for c in df.columns if 'OBSERVACIONES' in c.upper()]
         if obs_col:
             st.subheader("📝 Observaciones del Personal")
@@ -86,4 +92,4 @@ if df is not None:
     else:
         st.warning("No hay reportes con fechas válidas para esta ubicación.")
 else:
-    st.error("⚠️ No se encontró el archivo CSV en la carpeta.")
+    st.error("⚠️ No se encontró ningún archivo Excel (.xlsx) ni CSV (.csv) en GitHub.")
