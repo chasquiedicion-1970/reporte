@@ -2,11 +2,9 @@ import streamlit as st
 import pandas as pd
 import glob
 
-# Configuración de la página
-st.set_page_config(page_title="Dashboard Mantenimiento - Kioscos IA", layout="wide")
-st.title("🛠️ Panel de Mantenimiento y Supervisión - Kioscos IA")
+# Configuración visual de la página
+st.set_page_config(page_title="Visor de Kioscos IA", layout="wide")
 
-# 1. Cargar los datos automáticamente sin pedir el nombre exacto
 @st.cache_data
 def cargar_datos():
     archivos_csv = glob.glob("*.csv")
@@ -21,75 +19,69 @@ def cargar_datos():
 
 df = cargar_datos()
 
-# Si no encuentra nada, avisa
 if df is None:
-    st.error("⚠️ No se encontró el archivo de datos. Asegúrate de haber subido el archivo con los reportes a GitHub.")
+    st.error("⚠️ No se encontró el archivo de datos.")
     st.stop()
 
-# 2. Barra lateral para filtros
-st.sidebar.header("Filtros de Búsqueda")
-ubicacion = st.sidebar.multiselect(
-    "Selecciona el Kiosco / Ubicación:",
-    options=df["UBICACIÓN DEL MODULO"].dropna().unique()
-)
+# --- DISEÑO DEL VISUALIZADOR ---
 
-# Aplicar filtro
-if ubicacion:
-    df_filtrado = df[df["UBICACIÓN DEL MODULO"].isin(ubicacion)]
-else:
-    df_filtrado = df
+st.title("📱 Visor de Estado por Kiosco")
+st.markdown("Selecciona una ubicación para ver el estado detallado de su infraestructura.")
 
-# 3. Transformar los datos para identificar problemas rápidamente
-columnas_infra = ['PILOTO IZQUIERDO', 'COPILOTO DERECHO', 'DELANTERA', 'POSTERIOR', 
-                  'MUEBLES', 'CABLEADO', 'ENERGIA', 'ILUMINACIÓN', 'INTERNET', 
-                  'WI FI GRATUITO', 'LOCKERS', 'CAMARAS SEGURIDAD']
+# 1. Selector principal
+kioscos_disponibles = df["UBICACIÓN DEL MODULO"].dropna().unique()
+kiosco_seleccionado = st.selectbox("🎯 Elige el Kiosco a revisar:", kioscos_disponibles)
 
-# 4. Tarjetas de Resumen (Métricas)
-st.subheader("Resumen de Estado Operativo")
+# Filtrar datos del kiosco seleccionado
+df_kiosco = df[df["UBICACIÓN DEL MODULO"] == kiosco_seleccionado].copy()
+
+# Tomar el reporte más reciente (la última fila de ese kiosco)
+ultimo_reporte = df_kiosco.iloc[-1]
+
+st.header(f"📍 {kiosco_seleccionado}")
+st.caption(f"📅 Fecha del último reporte registrado: {ultimo_reporte.get('FECHA', 'No disponible')}")
+st.divider()
+
+# Función para convertir el texto en indicadores visuales
+def estado_visual(valor):
+    valor = str(valor).upper().strip()
+    if valor == "PERFECTO": return "🟢 Perfecto"
+    if valor == "CON PROBLEMAS": return "🟡 Con Problemas"
+    if valor in ["NO FUNCIONA", "SUCIO/ROTO"]: return f"🔴 {valor}"
+    if valor == "NAN": return "⚪ No evaluado"
+    return f"⚪ {valor}"
+
+# 2. Tarjetas visuales por áreas
+st.subheader("Estado de Componentes")
+
 col1, col2, col3 = st.columns(3)
 
-total_reportes = len(df_filtrado)
-reportes_criticos = df_filtrado[df_filtrado.isin(['NO FUNCIONA', 'SUCIO/ROTO']).any(axis=1)].shape[0]
-reportes_advertencia = df_filtrado[df_filtrado.isin(['CON PROBLEMAS']).any(axis=1)].shape[0]
+with col1:
+    st.markdown("### 🚪 Puertas y Estructura")
+    st.write(f"**Delantera:** {estado_visual(ultimo_reporte.get('DELANTERA'))}")
+    st.write(f"**Posterior:** {estado_visual(ultimo_reporte.get('POSTERIOR'))}")
+    st.write(f"**Muebles:** {estado_visual(ultimo_reporte.get('MUEBLES'))}")
+    st.info(f"📝 Observaciones: {ultimo_reporte.get('OBSERVACIONES PUERTAS', 'Ninguna')}")
 
-col1.metric("Total de Reportes Revisados", total_reportes)
-col2.metric("Kioscos en Estado CRÍTICO 🔴", reportes_criticos)
-col3.metric("Kioscos con Advertencias 🟡", reportes_advertencia)
+with col2:
+    st.markdown("### 🖥️ Pantallas")
+    st.write(f"**Totem Izq:** {estado_visual(ultimo_reporte.get('TOTEM IZQUIERDO'))}")
+    st.write(f"**Totem Der:** {estado_visual(ultimo_reporte.get('TOTEM DERECHO'))}")
+    st.write(f"**TV Izq:** {estado_visual(ultimo_reporte.get('TV IZQUIERDO'))}")
+    st.write(f"**TV Der:** {estado_visual(ultimo_reporte.get('TV DERECHO'))}")
+    st.info(f"📝 Observaciones: {ultimo_reporte.get('OBSERVACIONES PANTALLAS', 'Ninguna')}")
 
-st.divider()
-
-# 5. Lista de Acción
-st.subheader("📋 Lista de Incidentes para Solucionar")
-
-fallas = []
-for index, row in df_filtrado.iterrows():
-    for col in columnas_infra:
-        estado = str(row.get(col, ""))
-        if estado in ['CON PROBLEMAS', 'NO FUNCIONA', 'SUCIO/ROTO']:
-            fallas.append({
-                "Fecha": row.get("FECHA", ""),
-                "Ubicación": row.get("UBICACIÓN DEL MODULO", ""),
-                "Componente": col,
-                "Estado": estado,
-                "Observación Gral": row.get("DESCRIBA SUS OBSERVACIONES GENERALES LUEGO DE LA VISITA. PUEDE AMPLIAR O AGREGAR INFORMACIÓN", "")
-            })
-
-if fallas:
-    df_fallas = pd.DataFrame(fallas)
-    
-    def color_estado(val):
-        if val in ['NO FUNCIONA', 'SUCIO/ROTO']:
-            return 'background-color: #ffcccc; color: #990000' 
-        elif val == 'CON PROBLEMAS':
-            return 'background-color: #fff0b3; color: #997300' 
-        return ''
-    
-    st.dataframe(df_fallas.style.map(color_estado, subset=['Estado']), use_container_width=True)
-else:
-    st.success("¡Excelente! No se encontraron problemas de infraestructura en la selección actual.")
+with col3:
+    st.markdown("### 🔌 Conectividad y Energía")
+    st.write(f"**Energía:** {estado_visual(ultimo_reporte.get('ENERGIA'))}")
+    st.write(f"**Internet:** {estado_visual(ultimo_reporte.get('INTERNET'))}")
+    st.write(f"**Cámaras:** {estado_visual(ultimo_reporte.get('CAMARAS SEGURIDAD'))}")
+    st.write(f"**Lockers:** {estado_visual(ultimo_reporte.get('LOCKERS'))}")
+    st.info(f"📝 Observaciones: {ultimo_reporte.get('OBSERVACIONES OTROS', 'Ninguna')}")
 
 st.divider()
 
-# 6. Tabla Completa
-with st.expander("Ver Base de Datos Completa de Observaciones de Kioscos"):
-    st.dataframe(df_filtrado)
+# 3. Observaciones Generales del Técnico
+st.markdown("### 📋 Diagnóstico General de la Visita")
+comentario_general = ultimo_reporte.get('DESCRIBA SUS OBSERVACIONES GENERALES LUEGO DE LA VISITA. PUEDE AMPLIAR O AGREGAR INFORMACIÓN', 'No hay comentarios adicionales.')
+st.success(comentario_general)
