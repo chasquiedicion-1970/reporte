@@ -1,22 +1,27 @@
 import streamlit as st
 import pandas as pd
+import glob
 import plotly.express as px
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Dashboard Kioscos IA", layout="wide")
 
-# Tu enlace de Microsoft 365 con la terminación para descarga directa
-URL_365 = "https://kiscosia-my.sharepoint.com/:x:/g/personal/gerencia_comunicaciones_kioscosia_com/IQAdKGGmLFJWRKaaAfsAGtqtARwthzhAF0cuds4Yuz_tDlk?download=1" 
-
-@st.cache_data(ttl=300) # El sistema actualizará los datos nuevos cada 5 minutos
-def cargar_datos(url):
+@st.cache_data
+def cargar_datos():
+    # Busca automáticamente el archivo en tu GitHub
+    archivos_csv = glob.glob("*.csv")
+    archivos_excel = glob.glob("*.xlsx")
+    
     try:
-        return pd.read_excel(url)
+        if archivos_csv:
+            return pd.read_csv(archivos_csv[0])
+        elif archivos_excel:
+            return pd.read_excel(archivos_excel[0])
     except Exception as e:
-        st.error("⚠️ No se pudo conectar con el Excel. Asegúrate de que el enlace sea público ('Cualquier persona con el vínculo puede ver').")
-        st.stop()
+        st.error(f"Error al leer el archivo: {e}")
+    return None
 
-df = cargar_datos(URL_365)
+df = cargar_datos()
 
 if df is not None:
     # Asegurar que la fecha sea válida
@@ -54,4 +59,47 @@ if df is not None:
             fig = px.pie(df_resumen, names='Estado', title="Distribución de Estados",
                          color='Estado', color_discrete_map={
                              'PERFECTO': '#2ecc71', 
-                             'CON PROBLEMAS': '#f1c40f',
+                             'CON PROBLEMAS': '#f1c40f', 
+                             'NO FUNCIONA': '#e74c3c',
+                             'SUCIO/ROTO': '#e67e22'
+                         }, hole=0.6)
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col_met:
+            st.subheader("🛠️ Detalle de Componentes")
+            
+            c1, c2, c3 = st.columns(3)
+            
+            areas = {
+                "Estructura": ['DELANTERA', 'POSTERIOR', 'MUEBLES'],
+                "Sistemas": ['ENERGIA', 'INTERNET', 'CABLEADO'],
+                "Seguridad": ['CAMARAS SEGURIDAD', 'LOCKERS']
+            }
+            
+            def mostrar_estado(label, val):
+                val = str(val).upper().strip()
+                if val == "PERFECTO": st.success(f"**{label}:** OK")
+                elif val == "CON PROBLEMAS": st.warning(f"**{label}:** Advertencia")
+                elif val in ["NAN", "NONE"]: st.write(f"**{label}:** No evaluado")
+                else: st.error(f"**{label}:** {val}")
+
+            with c1:
+                st.markdown("**Fachada**")
+                for item in areas["Estructura"]: mostrar_estado(item, reporte.get(item))
+            with c2:
+                st.markdown("**Conectividad**")
+                for item in areas["Sistemas"]: mostrar_estado(item, reporte.get(item))
+            with c3:
+                st.markdown("**Otros**")
+                for item in areas["Seguridad"]: mostrar_estado(item, reporte.get(item))
+
+        st.divider()
+        
+        # Sección de Observaciones
+        st.subheader("📝 Observaciones del Personal")
+        obs = reporte.get('DESCRIBA SUS OBSERVACIONES GENERALES LUEGO DE LA VISITA. PUEDE AMPLIAR O AGREGAR INFORMACIÓN', 'Sin observaciones reportadas.')
+        st.info(obs)
+    else:
+        st.warning("No hay reportes con fechas válidas para esta ubicación.")
+else:
+    st.error("⚠️ No se encontró el archivo de datos.")
