@@ -6,10 +6,9 @@ import plotly.express as px
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Kioscos IA - Mantenimiento", layout="wide")
 
-st.title("📊 Estado de Infraestructura - Kioscos IA (Versión 6)")
+st.title("📊 Estado de Infraestructura - Kioscos IA (Versión 7)")
 
 def cargar_datos_limpios():
-    # Buscamos primero un Excel y luego un CSV
     archivos_excel = glob.glob("*.xlsx")
     archivos_csv = glob.glob("*.csv")
     
@@ -21,7 +20,6 @@ def cargar_datos_limpios():
             df = pd.read_csv(archivos_csv[0], encoding='utf-8-sig')
             
         if df is not None:
-            # Limpiamos nombres de columnas de espacios accidentales
             df.columns = df.columns.str.strip()
     except Exception as e:
         st.error(f"Error al leer el archivo: {e}")
@@ -31,11 +29,9 @@ def cargar_datos_limpios():
 df = cargar_datos_limpios()
 
 if df is not None:
-    # Detectamos las columnas dinámicamente
     col_ubicacion = [c for c in df.columns if 'UBICAC' in c.upper()][0]
     col_fecha = [c for c in df.columns if 'FECHA' in c.upper()][0]
     
-    # --- BARRA LATERAL ---
     st.sidebar.header("Filtros de Inspección")
     
     ubicaciones = df[col_ubicacion].dropna().unique()
@@ -85,10 +81,43 @@ if df is not None:
 
         st.divider()
         
+        # --- OBSERVACIONES GENERALES ---
         obs_col = [c for c in df.columns if 'OBSERVACIONES' in c.upper()]
         if obs_col:
             st.subheader("📝 Observaciones del Personal")
             st.info(reporte.get(obs_col[-1], 'Sin observaciones reportadas.'))
+
+        st.divider()
+
+        # --- SECCIÓN DE FOTOGRAFÍAS ---
+        st.subheader("📸 Evidencia Fotográfica")
+        col_fotos = [c for c in df.columns if 'FOTO' in c.upper()]
+        
+        if col_fotos:
+            fotos_str = str(reporte.get(col_fotos[0], ''))
+            # Comprobamos que existan fotos adjuntas
+            if fotos_str.lower() not in ['nan', 'none', '']:
+                # Separamos los enlaces por el punto y coma
+                urls = [url.strip() for url in fotos_str.split(';') if url.strip()]
+                
+                if urls:
+                    st.write(f"Se encontraron **{len(urls)} foto(s)** para este reporte:")
+                    cols_img = st.columns(min(len(urls), 3)) # Máximo 3 columnas para organizar
+                    
+                    for i, url in enumerate(urls):
+                        with cols_img[i % 3]:
+                            # 1. Enlace seguro en caso de bloqueo de Microsoft
+                            st.markdown(f"**[🔍 Clic para abrir Foto {i+1} en pantalla completa]({url})**")
+                            # 2. Intento de previsualización en el panel
+                            try:
+                                st.image(url, use_container_width=True)
+                            except:
+                                st.caption("Previsualización protegida por Microsoft. Usa el enlace de arriba.")
+            else:
+                st.write("No se adjuntaron fotografías en esta inspección.")
+        else:
+            st.write("Columna de fotos no detectada en la base de datos.")
+
     else:
         st.warning("No hay reportes con fechas válidas para esta ubicación.")
 else:
