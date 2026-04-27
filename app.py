@@ -1,87 +1,57 @@
 import streamlit as st
 import pandas as pd
-import glob
+import plotly.express as px
 
-# Configuración visual de la página
-st.set_page_config(page_title="Visor de Kioscos IA", layout="wide")
+# --- CONFIGURACIÓN ---
+st.set_page_config(page_title="Dashboard Kioscos IA", layout="wide")
 
-@st.cache_data
-def cargar_datos():
-    archivos_csv = glob.glob("*.csv")
-    archivos_excel = glob.glob("*.xlsx")
+# Tu enlace de Microsoft 365 con la terminación para descarga directa
+URL_365 = "https://kiscosia-my.sharepoint.com/:x:/g/personal/gerencia_comunicaciones_kioscosia_com/IQAdKGGmLFJWRKaaAfsAGtqtARwthzhAF0cuds4Yuz_tDlk?download=1" 
+
+@st.cache_data(ttl=300) # El sistema actualizará los datos nuevos cada 5 minutos
+def cargar_datos(url):
+    try:
+        return pd.read_excel(url)
+    except Exception as e:
+        st.error("⚠️ No se pudo conectar con el Excel. Asegúrate de que el enlace sea público ('Cualquier persona con el vínculo puede ver').")
+        st.stop()
+
+df = cargar_datos(URL_365)
+
+if df is not None:
+    # Asegurar que la fecha sea válida
+    df['FECHA'] = pd.to_datetime(df['FECHA'], errors='coerce').dt.date
     
-    if archivos_csv:
-        return pd.read_csv(archivos_csv[0])
-    elif archivos_excel:
-        return pd.read_excel(archivos_excel[0])
-    else:
-        return None
+    # --- BARRA LATERAL ---
+    st.sidebar.header("Filtros de Inspección")
+    
+    # 1. Selector de Kiosco
+    ubicaciones = df["UBICACIÓN DEL MODULO"].dropna().unique()
+    kiosco_sel = st.sidebar.selectbox("📍 Seleccionar Ubicación:", ubicaciones)
+    
+    # 2. Selector de Fecha
+    df_kiosco = df[df["UBICACIÓN DEL MODULO"] == kiosco_sel].sort_values(by="FECHA", ascending=False)
+    fechas = df_kiosco["FECHA"].dropna().unique()
+    
+    if len(fechas) > 0:
+        fecha_sel = st.sidebar.selectbox("📅 Seleccionar Fecha de Reporte:", fechas)
+        
+        # Filtrar el reporte específico
+        reporte = df_kiosco[df_kiosco["FECHA"] == fecha_sel].iloc[0]
 
-df = cargar_datos()
-
-if df is None:
-    st.error("⚠️ No se encontró el archivo de datos.")
-    st.stop()
-
-# --- DISEÑO DEL VISUALIZADOR ---
-
-st.title("📱 Visor de Estado por Kiosco")
-st.markdown("Selecciona una ubicación para ver el estado detallado de su infraestructura.")
-
-# 1. Selector principal
-kioscos_disponibles = df["UBICACIÓN DEL MODULO"].dropna().unique()
-kiosco_seleccionado = st.selectbox("🎯 Elige el Kiosco a revisar:", kioscos_disponibles)
-
-# Filtrar datos del kiosco seleccionado
-df_kiosco = df[df["UBICACIÓN DEL MODULO"] == kiosco_seleccionado].copy()
-
-# Tomar el reporte más reciente (la última fila de ese kiosco)
-ultimo_reporte = df_kiosco.iloc[-1]
-
-st.header(f"📍 {kiosco_seleccionado}")
-st.caption(f"📅 Fecha del último reporte registrado: {ultimo_reporte.get('FECHA', 'No disponible')}")
-st.divider()
-
-# Función para convertir el texto en indicadores visuales
-def estado_visual(valor):
-    valor = str(valor).upper().strip()
-    if valor == "PERFECTO": return "🟢 Perfecto"
-    if valor == "CON PROBLEMAS": return "🟡 Con Problemas"
-    if valor in ["NO FUNCIONA", "SUCIO/ROTO"]: return f"🔴 {valor}"
-    if valor == "NAN": return "⚪ No evaluado"
-    return f"⚪ {valor}"
-
-# 2. Tarjetas visuales por áreas
-st.subheader("Estado de Componentes")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("### 🚪 Puertas y Estructura")
-    st.write(f"**Delantera:** {estado_visual(ultimo_reporte.get('DELANTERA'))}")
-    st.write(f"**Posterior:** {estado_visual(ultimo_reporte.get('POSTERIOR'))}")
-    st.write(f"**Muebles:** {estado_visual(ultimo_reporte.get('MUEBLES'))}")
-    st.info(f"📝 Observaciones: {ultimo_reporte.get('OBSERVACIONES PUERTAS', 'Ninguna')}")
-
-with col2:
-    st.markdown("### 🖥️ Pantallas")
-    st.write(f"**Totem Izq:** {estado_visual(ultimo_reporte.get('TOTEM IZQUIERDO'))}")
-    st.write(f"**Totem Der:** {estado_visual(ultimo_reporte.get('TOTEM DERECHO'))}")
-    st.write(f"**TV Izq:** {estado_visual(ultimo_reporte.get('TV IZQUIERDO'))}")
-    st.write(f"**TV Der:** {estado_visual(ultimo_reporte.get('TV DERECHO'))}")
-    st.info(f"📝 Observaciones: {ultimo_reporte.get('OBSERVACIONES PANTALLAS', 'Ninguna')}")
-
-with col3:
-    st.markdown("### 🔌 Conectividad y Energía")
-    st.write(f"**Energía:** {estado_visual(ultimo_reporte.get('ENERGIA'))}")
-    st.write(f"**Internet:** {estado_visual(ultimo_reporte.get('INTERNET'))}")
-    st.write(f"**Cámaras:** {estado_visual(ultimo_reporte.get('CAMARAS SEGURIDAD'))}")
-    st.write(f"**Lockers:** {estado_visual(ultimo_reporte.get('LOCKERS'))}")
-    st.info(f"📝 Observaciones: {ultimo_reporte.get('OBSERVACIONES OTROS', 'Ninguna')}")
-
-st.divider()
-
-# 3. Observaciones Generales del Técnico
-st.markdown("### 📋 Diagnóstico General de la Visita")
-comentario_general = ultimo_reporte.get('DESCRIBA SUS OBSERVACIONES GENERALES LUEGO DE LA VISITA. PUEDE AMPLIAR O AGREGAR INFORMACIÓN', 'No hay comentarios adicionales.')
-st.success(comentario_general)
+        # --- PANEL PRINCIPAL ---
+        st.title(f"📊 Estado de Infraestructura: {kiosco_sel}")
+        st.markdown(f"**Fecha del reporte:** {fecha_sel}")
+        
+        # Gráfico de Salud General
+        col_graf, col_met = st.columns([1, 2])
+        
+        infra_cols = ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'CABLEADO', 'ENERGIA', 'INTERNET', 'CAMARAS SEGURIDAD']
+        estados_actuales = [str(reporte.get(c)).upper() for c in infra_cols]
+        df_resumen = pd.DataFrame({'Componente': infra_cols, 'Estado': estados_actuales})
+        
+        with col_graf:
+            fig = px.pie(df_resumen, names='Estado', title="Distribución de Estados",
+                         color='Estado', color_discrete_map={
+                             'PERFECTO': '#2ecc71', 
+                             'CON PROBLEMAS': '#f1c40f',
