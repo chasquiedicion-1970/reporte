@@ -10,7 +10,7 @@ st.title("🛠️ Panel de Mantenimiento y Supervisión - Kioscos IA")
 def cargar_datos():
     # Asegúrate de que el archivo CSV o Excel esté en la misma carpeta
     # Si es Excel, cambia read_csv por read_excel
-    df = pd.read_csv("REPORTE INCIDENCIAS MODULOS(1-21).xlsx - Sheet1.csv")
+   df = pd.read_excel("REPORTE INCIDENCIAS MODULOS(1-21).xlsx")
     return df
 
 df = cargar_datos()
