@@ -3,53 +3,28 @@ import pandas as pd
 import glob
 import plotly.express as px
 
-# 1. CONFIGURACIÓN DE PÁGINA
-st.set_page_config(page_title="Monitor Kioscos IA", layout="wide")
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="Dashboard Total - Kioscos IA", layout="wide")
 
-# 2. INYECCIÓN DE ESTILO CSS (Aquí es donde ocurre la magia visual)
+# Estilo Neón Profesional
 st.markdown("""
     <style>
-    /* Fondo general oscuro */
-    .stApp {
-        background-color: #0f172a;
-        color: #f8fafc;
-    }
-    
-    /* Estilo de las Tarjetas (Cards) */
+    .stApp { background-color: #030712; color: #f8fafc; }
     .kiosco-card {
-        background-color: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 15px;
-        padding: 25px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        background-color: #0f172a;
+        border: 1px solid #00d4ff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
         margin-bottom: 20px;
     }
-    
-    /* Títulos Neón */
-    .neon-text {
-        color: #00d4ff;
-        text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-        font-family: 'Poppins', sans-serif;
-    }
-    
-    /* Badges de Estado */
-    .status-badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
-        text-transform: uppercase;
-        float: right;
-    }
-    .status-online { background-color: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
-    .status-offline { background-color: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; }
-    
-    /* Ajustes de métricas estándar */
-    [data-testid="stMetricValue"] { color: #00d4ff !important; }
+    .neon-text { color: #00d4ff; text-shadow: 0 0 8px rgba(0, 212, 255, 0.5); }
+    [data-testid="stMetricValue"] { color: #00d4ff !important; font-family: 'Courier New', monospace; }
+    .data-label { color: #94a3b8; font-weight: bold; text-transform: uppercase; font-size: 0.85em; }
+    .data-value { color: #f8fafc; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. LÓGICA DE CARGA DE DATOS
 @st.cache_data(ttl=300)
 def cargar_datos():
     archivos = glob.glob("*.xlsx") + glob.glob("*.csv")
@@ -63,43 +38,78 @@ df = cargar_datos()
 
 if df is not None:
     df.columns = df.columns.str.strip()
+    # Identificación dinámica de columnas de control
     col_ub = [c for c in df.columns if 'UBICAC' in c.upper()][0]
     col_fe = [c for c in df.columns if 'FECHA' in c.upper()][0]
     
-    # --- BARRA LATERAL ---
-    st.sidebar.markdown("<h2 class='neon-text'>CENTRO DE CONTROL</h2>", unsafe_allow_html=True)
+    # Barra Lateral
+    st.sidebar.markdown("<h2 class='neon-text'>CONTROLES</h2>", unsafe_allow_html=True)
     sel_ub = st.sidebar.selectbox("📍 Seleccionar Kiosco", df[col_ub].unique())
-    
     df_filtrado = df[df[col_ub] == sel_ub].sort_values(by=col_fe, ascending=False)
     sel_fe = st.sidebar.selectbox("📅 Fecha de Reporte", df_filtrado[col_fe].unique())
     reporte = df_filtrado[df_filtrado[col_fe] == sel_fe].iloc[0]
 
-    # --- ENCABEZADO DE KPIs ---
-    st.markdown(f"<h1 class='neon-text'>ESTADO OPERATIVO: {sel_ub}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 class='neon-text'>SISTEMA DE GESTIÓN TOTAL: {sel_ub}</h1>", unsafe_allow_html=True)
+    st.divider()
+
+    # 1. BLOQUE VISUAL (Gráficos y Resumen)
+    c1, c2 = st.columns([1.5, 1])
     
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("ESTADO RED", "ONLINE 🟢")
-    k2.metric("ENERGÍA", "98% ⚡")
-    k3.metric("PANTALLAS", "4 ACTIVAS")
-    k4.metric("ÚLTIMO PING", "Hace 2 min")
+    with c1:
+        st.markdown('<div class="kiosco-card">', unsafe_allow_html=True)
+        # Definimos qué columnas queremos ver en el gráfico (las de infraestructura)
+        infra_esperada = ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'ENERGIA', 'INTERNET', 'CABLEADO', 'CAMARAS SEGURIDAD', 'ILUMINACIÓN']
+        infra_existente = [c for c in infra_esperada if c in df.columns]
+        
+        estados = [str(reporte.get(c, 'N/A')).upper() for c in infra_existente]
+        fig = px.bar(x=infra_existente, y=[1]*len(infra_existente), color=estados,
+                     title="Salud de Infraestructura Principal",
+                     color_discrete_map={'PERFECTO': '#2ecc71', 'CON PROBLEMAS': '#f1c40f', 'NO FUNCIONA': '#e74c3c', 'SUCIO/ROTO': '#e67e22'})
+        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#f8fafc", height=350)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("---")
+    with c2:
+        # Aquí mostramos columnas de "Identificación" (Nombre, Hora, etc.)
+        st.subheader("📋 Información del Registro")
+        columnas_usadas = [col_ub, col_fe] + infra_existente
+        
+        # Columnas de identificación típicas
+        id_cols = ['ID', 'HORA DE INICIO', 'HORA DE FINALIZACIÓN', 'CORREO ELECTRÓNICO', 'NOMBRE', 'TU NOMBRE']
+        for c in df.columns:
+            if c.upper() in id_cols:
+                st.markdown(f"<div class='data-label'>{c}</div><div class='data-value'>{reporte.get(c)}</div>", unsafe_allow_html=True)
+                columnas_usadas.append(c)
 
-    # --- DISEÑO DE TARJETA PRINCIPAL (TIPO IMAGEN DE REFERENCIA) ---
-    col_main, col_side = st.columns([2, 1])
+    st.divider()
 
-    with col_main:
-        st.markdown(f"""
-        <div class="kiosco-card">
-            <span class="status-badge status-online">● ONLINE</span>
-            <h2 style="margin-top:0;">{sel_ub}</h2>
-            <hr style="border-color:#334155;">
-            <div style="display: flex; justify-content: space-between; color: #94a3b8;">
-                <span><b>ID:</b> K-{sel_ub[:3].upper()}</span>
-                <span><b>IP:</b> 192.168.1.{st.session_state.get('ip', '105')}</span>
-            </div>
-            <br>
-            <p style="color:#00d4ff;">📝 <b>DIAGNÓSTICO DEL TÉCNICO:</b></p>
-            <p style="font-style: italic;">{reporte.get('DESCRIBA SUS OBSERVACIONES GENERALES LUEGO DE LA VISITA. PUEDE AMPLIAR O AGREGAR INFORMACIÓN', 'Sin observaciones.')}</p>
-        </div>
-        """, unsafe_allow
+    # 2. BLOQUE DE "DATOS ADICIONALES" (Aquí capturamos todo lo demás del Excel)
+    st.subheader("🔍 Detalle Completo de Campos")
+    
+    # Buscamos columnas que no hayan sido mostradas arriba y que no sean fotos
+    fotos_cols = [c for c in df.columns if 'FOTO' in c.upper()]
+    cols_restantes = [c for c in df.columns if c not in columnas_usadas and c not in fotos_cols]
+    
+    if cols_restantes:
+        # Dividimos en 3 columnas para que sea fácil de leer
+        filas = st.columns(3)
+        for i, col in enumerate(cols_restantes):
+            with filas[i % 3]:
+                valor = reporte.get(col)
+                if pd.notna(valor) and str(valor).strip() != "":
+                    st.markdown(f"<div class='data-label'>{col}</div><div class='data-value'>{valor}</div>", unsafe_allow_html=True)
+    
+    st.divider()
+
+    # 3. BLOQUE DE FOTOS
+    if fotos_cols:
+        st.subheader("📸 Evidencia Multimedia")
+        for f_col in fotos_cols:
+            links = str(reporte.get(f_col, ''))
+            if "http" in links:
+                st.write(f"**Archivo: {f_col}**")
+                for link in links.split(';'):
+                    st.image(link.strip(), use_container_width=True)
+    
+else:
+    st.error("No se encontró el archivo de datos.")
