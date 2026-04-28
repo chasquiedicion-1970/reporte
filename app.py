@@ -3,29 +3,31 @@ import pandas as pd
 import glob
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Kioscos IA - Reporte Completo", layout="wide")
+st.set_page_config(page_title="Reporte Ejecutivo Kioscos IA", layout="wide")
 
-# Estilo Neón para máxima visibilidad
+# ESTILO CSS PARA REPLICAR DOCUMENTO FORMAL
 st.markdown("""
     <style>
-    .stApp { background-color: #030712; color: #f8fafc; }
-    .main-card {
+    .stApp { background-color: #030712; color: #cbd5e1; }
+    .report-section {
         background-color: #0f172a;
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
+        padding: 30px;
+        border-radius: 10px;
+        border-left: 5px solid #00d4ff;
+        margin-bottom: 25px;
+        line-height: 1.6;
     }
-    .neon-title { color: #00d4ff; text-shadow: 0 0 10px rgba(0, 212, 255, 0.3); font-family: 'Poppins'; }
-    .data-card {
-        background: #1e293b;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #334155;
-        height: 100%;
+    .report-header { 
+        color: #00d4ff; 
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.5em;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
-    .label-text { color: #94a3b8; font-size: 0.8em; font-weight: bold; text-transform: uppercase; }
-    .value-text { color: #f8fafc; font-size: 1.1em; font-weight: 500; }
+    .highlight-ok { color: #2ecc71; font-weight: bold; }
+    .highlight-fail { color: #e74c3c; font-weight: bold; }
+    .label-bold { color: #f8fafc; font-weight: 600; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -40,59 +42,99 @@ def cargar_datos():
 df = cargar_datos()
 
 if df is not None:
-    # Identificar columnas de ubicación y fecha (indispensables para filtrar)
+    # Identificadores
     col_ub = [c for c in df.columns if 'UBICAC' in c.upper()][0]
     col_fe = [c for c in df.columns if 'HORA' in c.upper() or 'FECHA' in c.upper()][0]
     
     # Sidebar
-    st.sidebar.markdown("<h2 style='color:#00d4ff;'>PANEL DE CONTROL</h2>", unsafe_allow_html=True)
-    sel_ub = st.sidebar.selectbox("Seleccionar Kiosco", df[col_ub].unique())
+    st.sidebar.markdown("<h2 style='color:#00d4ff;'>AUDITORÍA</h2>", unsafe_allow_html=True)
+    sel_ub = st.sidebar.selectbox("Seleccionar Módulo", df[col_ub].unique())
     df_filtrado = df[df[col_ub] == sel_ub].sort_values(by=col_fe, ascending=False)
-    sel_fe = st.sidebar.selectbox("Seleccionar Reporte", df_filtrado[col_fe].unique())
+    sel_fe = st.sidebar.selectbox("Fecha del Informe", df_filtrado[col_fe].unique())
     reporte = df_filtrado[df_filtrado[col_fe] == sel_fe].iloc[0]
 
-    st.markdown(f"<h1 class='neon-title'>REPORTE INTEGRAL: {sel_ub}</h1>", unsafe_allow_html=True)
-    st.markdown(f"**Fecha y Hora del Registro:** {sel_fe}")
+    st.markdown(f"<h1 style='color:#f8fafc;'>INFORME DE INSPECCIÓN TÉCNICA: {sel_ub}</h1>", unsafe_allow_html=True)
+    st.write(f"**Generado el:** {sel_fe}")
     st.divider()
 
-    # --- RENDERIZADO DE TODAS LAS CELDAS SIN EXCEPCIÓN ---
+    # --- ESTRUCTURA BASADA EN EL DOCUMENTO WORD ---
     
-    # Separamos fotos para el final por estética
+    # 1. Resumen de Infraestructura (Párrafo narrativo)
+    st.markdown('<div class="report-section">', unsafe_allow_html=True)
+    st.markdown('<div class="report-header">1. Infraestructura y Fachada</div>', unsafe_allow_html=True)
+    
+    campos_infra = ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'PINTURA', 'LIMPIEZA']
+    infra_txt = "Durante la inspección visual de la estructura externa, se determinó lo siguiente: "
+    
+    detalles = []
+    for c in [cat for cat in campos_infra if cat in df.columns]:
+        val = str(reporte.get(c, 'N/A')).upper()
+        status_class = "highlight-ok" if "OK" in val or "PERFECTO" in val else "highlight-fail"
+        detalles.append(f"la parte <span class='label-bold'>{c.lower()}</span> se encuentra en estado <span class='{status_class}'>{val}</span>")
+    
+    st.markdown(f"{infra_txt} {', '.join(detalles)}. " , unsafe_allow_html=True)
+    
+    # Observaciones específicas de infraestructura
+    obs_infra = [c for c in df.columns if 'OBSERVACION' in c.upper() and ('INFRA' in c.upper() or 'ESTRUCTURA' in c.upper() or 'PUERTA' in c.upper())]
+    for o in obs_infra:
+        txt = str(reporte.get(o, '')).strip()
+        if txt.lower() not in ['nan', '', '.']:
+            st.markdown(f"<br>**Nota Adicional:** {txt}", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 2. Sistemas y Maquinaria (Párrafo narrativo)
+    st.markdown('<div class="report-section">', unsafe_allow_html=True)
+    st.markdown('<div class="report-header">2. Sistemas y Componentes Tecnológicos</div>', unsafe_allow_html=True)
+    
+    campos_sys = ['ENERGIA', 'INTERNET', 'CABLEADO', 'CAMARAS SEGURIDAD', 'ILUMINACIÓN', 'LOCKERS']
+    sys_txt = "En cuanto a los sistemas operativos y conectividad del módulo, se reporta que "
+    
+    detalles_sys = []
+    for s in [sys for sys in campos_sys if sys in df.columns]:
+        val_s = str(reporte.get(s, 'N/A')).upper()
+        status_s = "highlight-ok" if "OK" in val_s or "PERFECTO" in val_s else "highlight-fail"
+        detalles_sys.append(f"el sistema de <span class='label-bold'>{s.lower()}</span> opera como <span class='{status_s}'>{val_s}</span>")
+    
+    st.markdown(f"{sys_txt} {', '.join(detalles_sys)}. ", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 3. Pantallas y Multimedia (Párrafo narrativo)
+    st.markdown('<div class="report-section">', unsafe_allow_html=True)
+    st.markdown('<div class="report-header">3. Gestión de Pantallas y Pilotos</div>', unsafe_allow_html=True)
+    
+    campos_pan = ['TOTEM IZQUIERDO', 'TOTEM DERECHO', 'TV IZQUIERDO', 'TV DERECHO', 'PILOTO IZQUIERDO', 'COPILOTO DERECHO']
+    pan_txt = "El estado de las unidades de visualización y monitores indica que "
+    
+    detalles_pan = []
+    for p in [pan for pan in campos_pan if pan in df.columns]:
+        val_p = str(reporte.get(p, 'N/A')).upper()
+        status_p = "highlight-ok" if "OK" in val_p or "PERFECTO" in val_p else "highlight-fail"
+        detalles_pan.append(f"el <span class='label-bold'>{p.lower()}</span> está <span class='{status_p}'>{val_p}</span>")
+    
+    st.markdown(f"{pan_txt} {', '.join(detalles_pan)}. ", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 4. Galería de Evidencia
     foto_cols = [c for c in df.columns if 'FOTO' in c.upper() or 'IMAGEN' in c.upper()]
-    info_cols = [c for c in df.columns if c not in foto_cols]
-
-    # Mostramos toda la información de texto/estado en una rejilla dinámica
-    st.subheader("📋 Datos Detallados del Formulario")
-    
-    # Creamos filas de 4 columnas para que quepan todos los datos
-    for i in range(0, len(info_cols), 4):
-        cols = st.columns(4)
-        for idx, col_name in enumerate(info_cols[i:i+4]):
-            with cols[idx]:
-                valor = reporte.get(col_name)
-                # Solo mostramos si no está vacío
-                if pd.notna(valor) and str(valor).strip() != "":
-                    st.markdown(f"""
-                        <div class="data-card">
-                            <div class="label-text">{col_name}</div>
-                            <div class="value-text">{valor}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-        st.write("") # Espaciador
-
-    st.divider()
-
-    # --- SECCIÓN DE FOTOS ---
     if foto_cols:
-        st.subheader("📸 Evidencia Fotográfica")
-        for f_col in foto_cols:
-            link = str(reporte.get(f_col, ''))
+        st.subheader("📸 Registro Fotográfico del Informe")
+        f_cols = st.columns(len(foto_cols))
+        for i, f in enumerate(foto_cols):
+            link = str(reporte.get(f, ''))
             if "http" in link:
-                st.markdown(f"**{f_col}**")
-                # Manejo de múltiples fotos separadas por ';'
-                for img_url in link.split(';'):
-                    if img_url.strip():
-                        st.image(img_url.strip(), use_container_width=True)
+                with f_cols[i]:
+                    st.image(link.split(';')[0], caption=f, use_container_width=True)
+
+    # 5. Anexo: Todos los campos restantes
+    columnas_mostradas = campos_infra + campos_sys + campos_pan + foto_cols + [col_ub, col_fe]
+    sobrantes = [c for c in df.columns if c not in columnas_mostradas and 'OBSERV' not in c.upper()]
     
+    if sobrantes:
+        with st.expander("📂 Datos adicionales del registro"):
+            for s in sobrantes:
+                val = reporte.get(s)
+                if pd.notna(val):
+                    st.write(f"**{s}:** {val}")
+
 else:
-    st.error("⚠️ No se encontró el archivo Excel (.xlsx) en la carpeta del proyecto.")
+    st.error("Por favor, asegúrate de que el archivo Excel esté en la carpeta del proyecto.")
