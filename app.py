@@ -3,31 +3,60 @@ import pandas as pd
 import glob
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Reporte Ejecutivo Kioscos IA", layout="wide")
+st.set_page_config(page_title="Reporte de Inspección Kioscos IA", layout="wide")
 
-# ESTILO CSS PARA REPLICAR DOCUMENTO FORMAL
+# ESTILO PROFESIONAL INSPIRADO EN DOCUMENTO CORPORATIVO
 st.markdown("""
     <style>
-    .stApp { background-color: #030712; color: #cbd5e1; }
-    .report-section {
-        background-color: #0f172a;
-        padding: 30px;
-        border-radius: 10px;
-        border-left: 5px solid #00d4ff;
-        margin-bottom: 25px;
-        line-height: 1.6;
-    }
-    .report-header { 
-        color: #00d4ff; 
-        font-family: 'Poppins', sans-serif;
-        font-size: 1.5em;
+    .stApp { background-color: #fcfcfc; color: #1e293b; }
+    
+    /* Encabezado de Sección Estilo Word */
+    .section-header {
+        background-color: #1e293b;
+        color: #ffffff;
+        padding: 10px 20px;
+        font-family: 'Arial', sans-serif;
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-top: 25px;
         margin-bottom: 15px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        border-radius: 4px;
     }
-    .highlight-ok { color: #2ecc71; font-weight: bold; }
-    .highlight-fail { color: #e74c3c; font-weight: bold; }
-    .label-bold { color: #f8fafc; font-weight: 600; }
+    
+    /* Fila de Datos */
+    .data-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 15px;
+        border-bottom: 1px solid #e2e8f0;
+        background-color: #ffffff;
+    }
+    
+    .data-label {
+        font-weight: 600;
+        color: #475569;
+        width: 60%;
+    }
+    
+    .data-value {
+        width: 35%;
+        text-align: right;
+        font-weight: 500;
+    }
+
+    /* Colores de Estado */
+    .status-ok { color: #16a34a; font-weight: bold; }
+    .status-fail { color: #dc2626; font-weight: bold; }
+    .status-neutral { color: #2563eb; }
+
+    /* Contenedor de Observaciones */
+    .obs-container {
+        margin: 10px 0;
+        padding: 15px;
+        background-color: #f8fafc;
+        border-left: 4px solid #cbd5e1;
+        font-style: italic;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -42,99 +71,93 @@ def cargar_datos():
 df = cargar_datos()
 
 if df is not None:
-    # Identificadores
+    # Identificadores de ubicación y fecha
     col_ub = [c for c in df.columns if 'UBICAC' in c.upper()][0]
     col_fe = [c for c in df.columns if 'HORA' in c.upper() or 'FECHA' in c.upper()][0]
     
-    # Sidebar
-    st.sidebar.markdown("<h2 style='color:#00d4ff;'>AUDITORÍA</h2>", unsafe_allow_html=True)
-    sel_ub = st.sidebar.selectbox("Seleccionar Módulo", df[col_ub].unique())
+    # Sidebar de Navegación
+    st.sidebar.header("Selección de Informe")
+    sel_ub = st.sidebar.selectbox("Módulo / Ubicación", df[col_ub].unique())
     df_filtrado = df[df[col_ub] == sel_ub].sort_values(by=col_fe, ascending=False)
-    sel_fe = st.sidebar.selectbox("Fecha del Informe", df_filtrado[col_fe].unique())
+    sel_fe = st.sidebar.selectbox("Fecha y Hora", df_filtrado[col_fe].unique())
     reporte = df_filtrado[df_filtrado[col_fe] == sel_fe].iloc[0]
 
-    st.markdown(f"<h1 style='color:#f8fafc;'>INFORME DE INSPECCIÓN TÉCNICA: {sel_ub}</h1>", unsafe_allow_html=True)
-    st.write(f"**Generado el:** {sel_fe}")
-    st.divider()
+    # Encabezado Principal del Reporte
+    st.title(f"Informe Técnico: {sel_ub}")
+    st.caption(f"Registro oficial correspondiente al {sel_fe}")
+    
+    # --- DEFINICIÓN DE CATEGORÍAS (Basado en el orden del Word) ---
+    categorias = {
+        "1. INFRAESTRUCTURA Y EXTERIORES": [
+            "DELANTERA", "POSTERIOR", "LATERAL IZQUIERDO", "LATERAL DERECHO", 
+            "MUEBLES", "PINTURA", "LIMPIEZA", "FACHADA", "PUERTA"
+        ],
+        "2. COMPONENTES TÉCNICOS Y MAQUINARIA": [
+            "ENERGIA", "INTERNET", "CABLEADO", "CAMARAS SEGURIDAD", 
+            "ILUMINACIÓN", "LOCKERS", "SISTEMA SOLAR"
+        ],
+        "3. PANTALLAS Y UNIDADES DE PILOTO": [
+            "TOTEM IZQUIERDO", "TOTEM DERECHO", "TV IZQUIERDO", "TV DERECHO", 
+            "PILOTO IZQUIERDO", "COPILOTO DERECHO", "MONITOR"
+        ]
+    }
 
-    # --- ESTRUCTURA BASADA EN EL DOCUMENTO WORD ---
-    
-    # 1. Resumen de Infraestructura (Párrafo narrativo)
-    st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="report-header">1. Infraestructura y Fachada</div>', unsafe_allow_html=True)
-    
-    campos_infra = ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'PINTURA', 'LIMPIEZA']
-    infra_txt = "Durante la inspección visual de la estructura externa, se determinó lo siguiente: "
-    
-    detalles = []
-    for c in [cat for cat in campos_infra if cat in df.columns]:
-        val = str(reporte.get(c, 'N/A')).upper()
-        status_class = "highlight-ok" if "OK" in val or "PERFECTO" in val else "highlight-fail"
-        detalles.append(f"la parte <span class='label-bold'>{c.lower()}</span> se encuentra en estado <span class='{status_class}'>{val}</span>")
-    
-    st.markdown(f"{infra_txt} {', '.join(detalles)}. " , unsafe_allow_html=True)
-    
-    # Observaciones específicas de infraestructura
-    obs_infra = [c for c in df.columns if 'OBSERVACION' in c.upper() and ('INFRA' in c.upper() or 'ESTRUCTURA' in c.upper() or 'PUERTA' in c.upper())]
-    for o in obs_infra:
-        txt = str(reporte.get(o, '')).strip()
-        if txt.lower() not in ['nan', '', '.']:
-            st.markdown(f"<br>**Nota Adicional:** {txt}", unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # 2. Sistemas y Maquinaria (Párrafo narrativo)
-    st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="report-header">2. Sistemas y Componentes Tecnológicos</div>', unsafe_allow_html=True)
-    
-    campos_sys = ['ENERGIA', 'INTERNET', 'CABLEADO', 'CAMARAS SEGURIDAD', 'ILUMINACIÓN', 'LOCKERS']
-    sys_txt = "En cuanto a los sistemas operativos y conectividad del módulo, se reporta que "
-    
-    detalles_sys = []
-    for s in [sys for sys in campos_sys if sys in df.columns]:
-        val_s = str(reporte.get(s, 'N/A')).upper()
-        status_s = "highlight-ok" if "OK" in val_s or "PERFECTO" in val_s else "highlight-fail"
-        detalles_sys.append(f"el sistema de <span class='label-bold'>{s.lower()}</span> opera como <span class='{status_s}'>{val_s}</span>")
-    
-    st.markdown(f"{sys_txt} {', '.join(detalles_sys)}. ", unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # 3. Pantallas y Multimedia (Párrafo narrativo)
-    st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="report-header">3. Gestión de Pantallas y Pilotos</div>', unsafe_allow_html=True)
-    
-    campos_pan = ['TOTEM IZQUIERDO', 'TOTEM DERECHO', 'TV IZQUIERDO', 'TV DERECHO', 'PILOTO IZQUIERDO', 'COPILOTO DERECHO']
-    pan_txt = "El estado de las unidades de visualización y monitores indica que "
-    
-    detalles_pan = []
-    for p in [pan for pan in campos_pan if pan in df.columns]:
-        val_p = str(reporte.get(p, 'N/A')).upper()
-        status_p = "highlight-ok" if "OK" in val_p or "PERFECTO" in val_p else "highlight-fail"
-        detalles_pan.append(f"el <span class='label-bold'>{p.lower()}</span> está <span class='{status_p}'>{val_p}</span>")
-    
-    st.markdown(f"{pan_txt} {', '.join(detalles_pan)}. ", unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # 4. Galería de Evidencia
+    columnas_ya_vistas = [col_ub, col_fe, 'ID', 'Hora de inicio', 'Hora de finalización', 'Correo electrónico', 'Nombre']
     foto_cols = [c for c in df.columns if 'FOTO' in c.upper() or 'IMAGEN' in c.upper()]
-    if foto_cols:
-        st.subheader("📸 Registro Fotográfico del Informe")
-        f_cols = st.columns(len(foto_cols))
-        for i, f in enumerate(foto_cols):
-            link = str(reporte.get(f, ''))
-            if "http" in link:
-                with f_cols[i]:
-                    st.image(link.split(';')[0], caption=f, use_container_width=True)
 
-    # 5. Anexo: Todos los campos restantes
-    columnas_mostradas = campos_infra + campos_sys + campos_pan + foto_cols + [col_ub, col_fe]
-    sobrantes = [c for c in df.columns if c not in columnas_mostradas and 'OBSERV' not in c.upper()]
-    
+    # Renderizado siguiendo el orden del Word
+    for titulo_sec, palabras_clave in categorias.items():
+        # Filtramos las columnas que pertenecen a este bloque
+        cols_en_bloque = [c for c in df.columns if any(k in c.upper() for k in palabras_clave) and c not in columnas_ya_vistas and c not in foto_cols]
+        
+        if cols_en_bloque:
+            st.markdown(f'<div class="section-header">{titulo_sec}</div>', unsafe_allow_html=True)
+            
+            for col in cols_en_bloque:
+                valor = str(reporte.get(col, 'N/A'))
+                
+                # Lógica de color según el valor
+                clase_status = "status-neutral"
+                if any(ok in valor.upper() for ok in ["OK", "PERFECTO", "BUENO"]): clase_status = "status-ok"
+                elif any(err in valor.upper() for err in ["FALLA", "MALO", "REVISAR", "SUCIO"]): clase_status = "status-fail"
+                
+                st.markdown(f"""
+                    <div class="data-row">
+                        <div class="data-label">{col}</div>
+                        <div class="data-value <span class='{clase_status}'>{valor}</span></div>
+                    </div>
+                """, unsafe_allow_html=True)
+                columnas_ya_vistas.append(col)
+
+            # Agregar observaciones específicas del bloque si existen
+            obs_del_bloque = [c for c in df.columns if 'OBSERV' in c.upper() and any(k in c.upper() for k in titulo_sec.split())]
+            for obs_col in obs_del_bloque:
+                texto_obs = str(reporte.get(obs_col, '')).strip()
+                if texto_obs.lower() not in ['nan', '', '.']:
+                    st.markdown(f'<div class="obs-container"><b>Observaciones:</b> {texto_obs}</div>', unsafe_allow_html=True)
+                    columnas_ya_vistas.append(obs_col)
+
+    # --- SECCIÓN DE FOTOS (Visualización limpia) ---
+    if foto_cols:
+        st.markdown('<div class="section-header">4. REGISTRO FOTOGRÁFICO</div>', unsafe_allow_html=True)
+        # Mostramos fotos en columnas de 2 para mantener tamaño grande tipo Word
+        for i in range(0, len(foto_cols), 2):
+            cols_img = st.columns(2)
+            for idx, f_col in enumerate(foto_cols[i:i+2]):
+                link = str(reporte.get(f_col, ''))
+                if "http" in link:
+                    with cols_img[idx]:
+                        st.image(link.split(';')[0], caption=f_col, use_container_width=True)
+                columnas_ya_vistas.append(f_col)
+
+    # --- DATOS ADICIONALES (Cualquier columna que sobre) ---
+    sobrantes = [c for c in df.columns if c not in columnas_ya_vistas]
     if sobrantes:
-        with st.expander("📂 Datos adicionales del registro"):
+        with st.expander("Ver otros datos del sistema"):
             for s in sobrantes:
                 val = reporte.get(s)
                 if pd.notna(val):
                     st.write(f"**{s}:** {val}")
 
 else:
-    st.error("Por favor, asegúrate de que el archivo Excel esté en la carpeta del proyecto.")
+    st.error("No se encontró el archivo .xlsx en la carpeta.")
