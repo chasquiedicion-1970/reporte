@@ -25,7 +25,6 @@ tab1, tab2 = st.tabs(["📝 REGISTRO DE INSPECCIÓN", "🛠️ DASHBOARD TÉCNIC
 with tab1:
     st.title("📋 Reporte Integral de Visita")
     
-    # Iniciamos el formulario
     with st.form("main_form", clear_on_submit=True):
         
         # 1. INFO GENERAL
@@ -74,25 +73,29 @@ with tab1:
         # 4. OTROS Y MAQUINAS
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("⚙️ 10. OTROS")
-        o1, o2, o3, o4 = st.columns(4)
+        o1, o2, o3, o4, o5 = st.columns(5)
         internet = o1.radio("Internet", ["Perfecto", "Con Problemas", "No Funciona"])
         wifi = o2.radio("Wi-Fi Gratuito", ["Perfecto", "Con Problemas", "No Funciona"])
         lockers = o3.radio("Lockers", ["Perfecto", "Con Problemas", "No Funciona"])
         camaras = o4.radio("Cámaras Seguridad", ["Perfecto", "Con Problemas", "No Funciona"])
+        boton = o5.radio("Botón de Pánico", ["Perfecto", "Con Problemas", "No Funciona"])
+        obs_otros = st.text_input("11. OBSERVACIONES OTROS")
         
         st.subheader("🥤 12. MAQUINAS EXPENDEDORAS")
         m1, m2 = st.columns(2)
         maq_izq = m1.radio("Máquina Izquierda", ["Perfecto", "Con Problemas", "No Funciona"])
-        maq_der = m2.radio("Máquina Derecha", ["Perfecto", "Con Problemas", "No Funciona"])
+        maq_der = m2.radio("Máquina Derecho", ["Perfecto", "Con Problemas", "No Funciona"])
+        obs_maq = st.text_input("13. OBSERVACIONES MAQUINAS")
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 5. BRANDING Y LIMPIEZA
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("✨ 14. BRANDING Y LIMPIEZA")
-        b1, b2, b3 = st.columns(3)
+        b1, b2, b3, b4 = st.columns(4)
         branding = b1.radio("Branding", ["Perfecto", "Sucio/Roto", "Urge Cambio"])
         l_int = b2.radio("Limpieza Interna", ["Perfecto", "Sucio/Roto", "Urge Cambio"])
         l_ext = b3.radio("Limpieza Externa", ["Perfecto", "Sucio/Roto", "Urge Cambio"])
+        l_vis = b4.radio("Leds Visuales", ["Perfecto", "Sucio/Roto", "Urge Cambio"])
         obs_mod = st.text_input("15. OBSERVACIONES ESTADO MODULO")
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -105,16 +108,16 @@ with tab1:
         uploaded_images = st.file_uploader("Sube entre 5 y 10 fotos", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # BOTÓN DE ENVÍO (Debe estar dentro del bloque 'with st.form')
+        # BOTÓN CORRECTO: st.form_submit_button
         submit = st.form_submit_button("✅ ENVIAR REPORTE COMPLETO")
 
-    # PROCESAMIENTO FUERA DEL FORM PERO LIGADO AL BOTÓN
+    # Lógica de procesamiento al enviar
     if submit:
         if not tecnico or not obs_gen or not uploaded_images:
-            st.warning("⚠️ El nombre, las observaciones generales y las fotos son obligatorios.")
+            st.warning("⚠️ Debes completar tu nombre, las observaciones finales y las fotos.")
         else:
             links_fotos = []
-            with st.spinner("Procesando fotos y guardando reporte..."):
+            with st.spinner("Subiendo fotos y guardando reporte..."):
                 for file in uploaded_images[:10]:
                     try:
                         payload = {"key": IMGBB_API_KEY, "image": base64.b64encode(file.read()).decode('utf-8')}
@@ -123,23 +126,23 @@ with tab1:
                             links_fotos.append(res.json()['data']['url'])
                     except: pass
                 
-                # Armamos el paquete de datos
-                data_to_send = {
+                # Datos organizados para Google
+                data_json = {
                     "action": "insertar",
                     "tecnico": tecnico, "ubicacion": ubicacion,
                     "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
-                    "muebles": muebles, "cableado": cableado, "energia": energia, "ilumina": ilumina, "obs_int": obs_int,
+                    "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina, "obs_int": obs_int,
                     "leds_s": leds_s, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_pan,
-                    "internet": internet, "wifi": wifi, "lockers": lockers, "camaras": camaras,
-                    "m_izq": maq_izq, "m_der": maq_der,
-                    "branding": branding, "l_int": l_int, "l_ext": l_ext, "obs_mod": obs_mod,
+                    "internet": internet, "wifi": wifi, "lockers": lockers, "camaras": camaras, "boton": boton, "obs_otros": obs_otros,
+                    "m_izq": maq_izq, "m_der": maq_der, "obs_maq": obs_maq,
+                    "branding": branding, "l_int": l_int, "l_ext": l_ext, "l_vis": l_vis, "obs_mod": obs_mod,
                     "obs_gen": obs_gen, "fotos": ";".join(links_fotos)
                 }
                 
                 try:
-                    resp = requests.post(URL_BRIDGE, json=data_to_send)
-                    if resp.status_code == 200:
-                        st.success("✅ ¡Reporte guardado exitosamente en Google Sheets!")
+                    r = requests.post(URL_BRIDGE, json=data_json)
+                    if r.status_code == 200:
+                        st.success("¡Reporte guardado con éxito!")
                         st.balloons()
                 except:
                     st.error("Error al conectar con la base de datos.")
@@ -156,8 +159,8 @@ with tab2:
                 for index, row in df.iterrows():
                     with st.expander(f"📍 {row['Ubicacion']} - {row['Fecha']}"):
                         st.write(f"**Técnico:** {row['Tecnico']}")
-                        st.write(f"**Obs Generales:** {row['Obs_Generales']}")
+                        st.write(f"**Obs:** {row['Obs_Generales']}")
                         if row['Fotos']:
                             st.image(str(row['Fotos']).split(";"), width=200)
-            else: st.info("No hay datos registrados.")
-        except: st.error("Error al leer la base de datos.")
+            else: st.info("No hay reportes registrados.")
+        except: st.error("No se pudo leer la base de datos.")
