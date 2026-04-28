@@ -10,7 +10,7 @@ IMGBB_API_KEY = "375f94b0781e8b8b0d2ffa0132d8edca"
 
 st.set_page_config(page_title="Kioscos IA - Operaciones", layout="wide")
 
-# Estilo Kioscos IA
+# Estilo Dark Neón
 st.markdown("""
     <style>
     .stApp { background-color: #020617; color: #f8fafc; }
@@ -21,12 +21,14 @@ st.markdown("""
 
 tab1, tab2 = st.tabs(["📝 REGISTRO DE INSPECCIÓN", "🛠️ DASHBOARD TÉCNICO"])
 
-# --- PARTE 1: INGRESO DE DATOS (SECCIONES 1-16) ---
+# --- PARTE 1: REGISTRO ---
 with tab1:
     st.title("📋 Reporte Integral de Visita")
     
+    # Iniciamos el formulario
     with st.form("main_form", clear_on_submit=True):
-        # 1. INFO GENERAL (Pantallazo 1)
+        
+        # 1. INFO GENERAL
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("📍 Información General")
         c1, c2 = st.columns(2)
@@ -38,26 +40,26 @@ with tab1:
         ])
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 2. ESTRUCTURA (Pantallazo 2)
+        # 2. ESTRUCTURA Y PUERTAS
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("🏗️ 4. ESTRUCTURA - PUERTAS")
-        col_p1, col_p2, col_p3, col_p4 = st.columns(4)
-        p_izq = col_p1.radio("Piloto Izquierdo", ["Perfecto", "Con Problemas", "No Funciona"])
-        c_der = col_p2.radio("Copiloto Derecho", ["Perfecto", "Con Problemas", "No Funciona"])
-        p_del = col_p3.radio("Delantera", ["Perfecto", "Con Problemas", "No Funciona"])
-        p_pos = col_p4.radio("Posterior", ["Perfecto", "Con Problemas", "No Funciona"])
+        cp1, cp2, cp3, cp4 = st.columns(4)
+        p_izq = cp1.radio("Piloto Izquierdo", ["Perfecto", "Con Problemas", "No Funciona"])
+        c_der = cp2.radio("Copiloto Derecho", ["Perfecto", "Con Problemas", "No Funciona"])
+        p_del = cp3.radio("Delantera", ["Perfecto", "Con Problemas", "No Funciona"])
+        p_pos = cp4.radio("Posterior", ["Perfecto", "Con Problemas", "No Funciona"])
         obs_p = st.text_input("5. OBSERVACIONES PUERTAS")
         
         st.subheader("🏠 6. INTERIORES")
-        col_i1, col_i2, col_i3, col_i4 = st.columns(4)
-        muebles = col_i1.radio("Muebles", ["Perfecto", "Con Problemas", "No Funciona"])
-        cableado = col_i2.radio("Cableado", ["Perfecto", "Con Problemas", "No Funciona"])
-        energia = col_i3.radio("Energía", ["Perfecto", "Con Problemas", "No Funciona"])
-        ilumina = col_i4.radio("Iluminación", ["Perfecto", "Con Problemas", "No Funciona"])
+        ci1, ci2, ci3, ci4 = st.columns(4)
+        muebles = ci1.radio("Muebles", ["Perfecto", "Con Problemas", "No Funciona"])
+        cableado = ci2.radio("Cableado", ["Perfecto", "Con Problemas", "No Funciona"])
+        energia = ci3.radio("Energía", ["Perfecto", "Con Problemas", "No Funciona"])
+        ilumina = ci4.radio("Iluminación", ["Perfecto", "Con Problemas", "No Funciona"])
         obs_int = st.text_input("7. OBSERVACIONES INTERIORES")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 3. IT (Pantallazo 3)
+        # 3. PANTALLAS (IT)
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("🖥️ 8. PANTALLAS (IT)")
         it1, it2, it3, it4, it5 = st.columns(5)
@@ -69,44 +71,93 @@ with tab1:
         obs_pan = st.text_input("9. OBSERVACIONES PANTALLAS")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 4. OTROS (Pantallazo 4)
+        # 4. OTROS Y MAQUINAS
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("⚙️ 10. OTROS")
-        o1, o2, o3, o4, o5 = st.columns(5)
+        o1, o2, o3, o4 = st.columns(4)
         internet = o1.radio("Internet", ["Perfecto", "Con Problemas", "No Funciona"])
         wifi = o2.radio("Wi-Fi Gratuito", ["Perfecto", "Con Problemas", "No Funciona"])
         lockers = o3.radio("Lockers", ["Perfecto", "Con Problemas", "No Funciona"])
         camaras = o4.radio("Cámaras Seguridad", ["Perfecto", "Con Problemas", "No Funciona"])
-        boton = o5.radio("Botón de Pánico", ["Perfecto", "Con Problemas", "No Funciona"])
-        obs_otros = st.text_input("11. OBSERVACIONES OTROS")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # 5. MAQUINAS (Pantallazo 5)
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        
         st.subheader("🥤 12. MAQUINAS EXPENDEDORAS")
         m1, m2 = st.columns(2)
         maq_izq = m1.radio("Máquina Izquierda", ["Perfecto", "Con Problemas", "No Funciona"])
         maq_der = m2.radio("Máquina Derecha", ["Perfecto", "Con Problemas", "No Funciona"])
-        obs_maq = st.text_input("13. OBSERVACIONES MAQUINAS")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 6. BRANDING / LIMPIEZA (Pantallazo 6)
+        # 5. BRANDING Y LIMPIEZA
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("✨ 14. BRANDING Y LIMPIEZA")
-        b1, b2, b3, b4 = st.columns(4)
+        b1, b2, b3 = st.columns(3)
         branding = b1.radio("Branding", ["Perfecto", "Sucio/Roto", "Urge Cambio"])
         l_int = b2.radio("Limpieza Interna", ["Perfecto", "Sucio/Roto", "Urge Cambio"])
         l_ext = b3.radio("Limpieza Externa", ["Perfecto", "Sucio/Roto", "Urge Cambio"])
-        l_vis = b4.radio("Leds Visuales", ["Perfecto", "Sucio/Roto", "Urge Cambio"])
         obs_mod = st.text_input("15. OBSERVACIONES ESTADO MODULO")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 7. GENERAL Y FOTOS
+        # 6. GENERAL Y FOTOS
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("📝 16. OBSERVACIONES GENERALES")
         obs_gen = st.text_area("Describa sus observaciones generales luego de la visita *")
+        
         st.subheader("📸 REGISTRO FOTOGRÁFICO")
         uploaded_images = st.file_uploader("Sube entre 5 y 10 fotos", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
         st.markdown('</div>', unsafe_allow_html=True)
 
-        submit = st.form_submit
+        # BOTÓN DE ENVÍO (Debe estar dentro del bloque 'with st.form')
+        submit = st.form_submit_button("✅ ENVIAR REPORTE COMPLETO")
+
+    # PROCESAMIENTO FUERA DEL FORM PERO LIGADO AL BOTÓN
+    if submit:
+        if not tecnico or not obs_gen or not uploaded_images:
+            st.warning("⚠️ El nombre, las observaciones generales y las fotos son obligatorios.")
+        else:
+            links_fotos = []
+            with st.spinner("Procesando fotos y guardando reporte..."):
+                for file in uploaded_images[:10]:
+                    try:
+                        payload = {"key": IMGBB_API_KEY, "image": base64.b64encode(file.read()).decode('utf-8')}
+                        res = requests.post("https://api.imgbb.com/1/upload", payload)
+                        if res.status_code == 200:
+                            links_fotos.append(res.json()['data']['url'])
+                    except: pass
+                
+                # Armamos el paquete de datos
+                data_to_send = {
+                    "action": "insertar",
+                    "tecnico": tecnico, "ubicacion": ubicacion,
+                    "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
+                    "muebles": muebles, "cableado": cableado, "energia": energia, "ilumina": ilumina, "obs_int": obs_int,
+                    "leds_s": leds_s, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_pan,
+                    "internet": internet, "wifi": wifi, "lockers": lockers, "camaras": camaras,
+                    "m_izq": maq_izq, "m_der": maq_der,
+                    "branding": branding, "l_int": l_int, "l_ext": l_ext, "obs_mod": obs_mod,
+                    "obs_gen": obs_gen, "fotos": ";".join(links_fotos)
+                }
+                
+                try:
+                    resp = requests.post(URL_BRIDGE, json=data_to_send)
+                    if resp.status_code == 200:
+                        st.success("✅ ¡Reporte guardado exitosamente en Google Sheets!")
+                        st.balloons()
+                except:
+                    st.error("Error al conectar con la base de datos.")
+
+# --- PARTE 2: DASHBOARD TÉCNICO ---
+with tab2:
+    st.title("🛠️ Gestión Técnica")
+    if st.button("🔄 Actualizar Datos"):
+        try:
+            r = requests.get(URL_BRIDGE)
+            data = r.json()
+            if len(data) > 1:
+                df = pd.DataFrame(data[1:], columns=data[0])
+                for index, row in df.iterrows():
+                    with st.expander(f"📍 {row['Ubicacion']} - {row['Fecha']}"):
+                        st.write(f"**Técnico:** {row['Tecnico']}")
+                        st.write(f"**Obs Generales:** {row['Obs_Generales']}")
+                        if row['Fotos']:
+                            st.image(str(row['Fotos']).split(";"), width=200)
+            else: st.info("No hay datos registrados.")
+        except: st.error("Error al leer la base de datos.")
