@@ -1,163 +1,113 @@
 import streamlit as st
 import pandas as pd
 import glob
+import plotly.express as px
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Reporte de Inspección Kioscos IA", layout="wide")
+st.set_page_config(page_title="Dashboard Kioscos IA", layout="wide", initial_sidebar_state="expanded")
 
-# ESTILO PROFESIONAL INSPIRADO EN DOCUMENTO CORPORATIVO
+# Estilo personalizado para las tarjetas (Métrica)
 st.markdown("""
     <style>
-    .stApp { background-color: #fcfcfc; color: #1e293b; }
-    
-    /* Encabezado de Sección Estilo Word */
-    .section-header {
-        background-color: #1e293b;
-        color: #ffffff;
-        padding: 10px 20px;
-        font-family: 'Arial', sans-serif;
-        font-size: 1.2em;
-        font-weight: bold;
-        margin-top: 25px;
-        margin-bottom: 15px;
-        border-radius: 4px;
-    }
-    
-    /* Fila de Datos */
-    .data-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 15px;
-        border-bottom: 1px solid #e2e8f0;
-        background-color: #ffffff;
-    }
-    
-    .data-label {
-        font-weight: 600;
-        color: #475569;
-        width: 60%;
-    }
-    
-    .data-value {
-        width: 35%;
-        text-align: right;
-        font-weight: 500;
-    }
-
-    /* Colores de Estado */
-    .status-ok { color: #16a34a; font-weight: bold; }
-    .status-fail { color: #dc2626; font-weight: bold; }
-    .status-neutral { color: #2563eb; }
-
-    /* Contenedor de Observaciones */
-    .obs-container {
-        margin: 10px 0;
-        padding: 15px;
-        background-color: #f8fafc;
-        border-left: 4px solid #cbd5e1;
-        font-style: italic;
-    }
+    [data-testid="stMetricValue"] { font-size: 24px; color: #00d4ff; }
+    .stAlert { border-radius: 10px; }
+    .stApp { background-color: #030712; color: #f8fafc; }
     </style>
     """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=30)
 def cargar_datos():
-    archivos = glob.glob("*.xlsx")
+    # Busca archivos Excel generados por el Form de 365
+    archivos = glob.glob("*.xlsx") + glob.glob("*.csv")
     if not archivos: return None
-    df = pd.read_excel(archivos[0])
-    df.columns = df.columns.str.strip()
-    return df
+    try:
+        if archivos[0].endswith('.xlsx'): return pd.read_excel(archivos[0])
+        return pd.read_csv(archivos[0], encoding='utf-8-sig')
+    except: return None
 
 df = cargar_datos()
 
 if df is not None:
-    # Identificadores de ubicación y fecha
-    col_ub = [c for c in df.columns if 'UBICAC' in c.upper()][0]
-    col_fe = [c for c in df.columns if 'HORA' in c.upper() or 'FECHA' in c.upper()][0]
+    df.columns = df.columns.str.strip()
     
-    # Sidebar de Navegación
-    st.sidebar.header("Selección de Informe")
-    sel_ub = st.sidebar.selectbox("Módulo / Ubicación", df[col_ub].unique())
+    # Identificar columnas principales de tu Form
+    col_ub = [c for c in df.columns if 'UBICAC' in c.upper()][0]
+    col_fe = [c for c in df.columns if 'FECHA' in c.upper() or 'HORA' in c.upper()][0]
+    col_nom = [c for c in df.columns if 'NOMBRE' in c.upper() or 'TU NOMBRE' in c.upper()][0]
+
+    # --- SIDEBAR ---
+    st.sidebar.title("Panel de Control")
+    sel_ub = st.sidebar.selectbox("📍 Ubicación", df[col_ub].unique())
+    
+    # Filtrado por Kiosco y Fecha más reciente
     df_filtrado = df[df[col_ub] == sel_ub].sort_values(by=col_fe, ascending=False)
-    sel_fe = st.sidebar.selectbox("Fecha y Hora", df_filtrado[col_fe].unique())
+    sel_fe = st.sidebar.selectbox("📅 Fecha de Reporte", df_filtrado[col_fe].unique())
     reporte = df_filtrado[df_filtrado[col_fe] == sel_fe].iloc[0]
 
-    # Encabezado Principal del Reporte
-    st.title(f"Informe Técnico: {sel_ub}")
-    st.caption(f"Registro oficial correspondiente al {sel_fe}")
+    # --- CUERPO PRINCIPAL ---
+    st.title(f"🖥️ Monitor de Infraestructura: {sel_ub}")
     
-    # --- DEFINICIÓN DE CATEGORÍAS (Basado en el orden del Word) ---
-    categorias = {
-        "1. INFRAESTRUCTURA Y EXTERIORES": [
-            "DELANTERA", "POSTERIOR", "LATERAL IZQUIERDO", "LATERAL DERECHO", 
-            "MUEBLES", "PINTURA", "LIMPIEZA", "FACHADA", "PUERTA"
-        ],
-        "2. COMPONENTES TÉCNICOS Y MAQUINARIA": [
-            "ENERGIA", "INTERNET", "CABLEADO", "CAMARAS SEGURIDAD", 
-            "ILUMINACIÓN", "LOCKERS", "SISTEMA SOLAR"
-        ],
-        "3. PANTALLAS Y UNIDADES DE PILOTO": [
-            "TOTEM IZQUIERDO", "TOTEM DERECHO", "TV IZQUIERDO", "TV DERECHO", 
-            "PILOTO IZQUIERDO", "COPILOTO DERECHO", "MONITOR"
-        ]
-    }
+    # Fila de Indicadores (KPIs)
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Módulo Seleccionado", sel_ub)
+    m2.metric("Inspector", reporte[col_nom])
+    m3.metric("Fecha", str(sel_fe))
 
-    columnas_ya_vistas = [col_ub, col_fe, 'ID', 'Hora de inicio', 'Hora de finalización', 'Correo electrónico', 'Nombre']
-    foto_cols = [c for c in df.columns if 'FOTO' in c.upper() or 'IMAGEN' in c.upper()]
+    st.divider()
 
-    # Renderizado siguiendo el orden del Word
-    for titulo_sec, palabras_clave in categorias.items():
-        # Filtramos las columnas que pertenecen a este bloque
-        cols_en_bloque = [c for c in df.columns if any(k in c.upper() for k in palabras_clave) and c not in columnas_ya_vistas and c not in foto_cols]
+    # Layout de dos columnas para Gráfico y Detalles
+    c1, c2 = st.columns([1.2, 2])
+
+    with c1:
+        st.subheader("📊 Estado de Salud")
+        # Items basados en tu estructura de Kioscos IA
+        items = ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'CABLEADO', 'ENERGIA', 'INTERNET', 'CAMARAS SEGURIDAD']
+        infra_cols = [c for c in items if c in df.columns]
+        estados = [str(reporte.get(c, 'N/A')).upper() for c in infra_cols]
         
-        if cols_en_bloque:
-            st.markdown(f'<div class="section-header">{titulo_sec}</div>', unsafe_allow_html=True)
-            
-            for col in cols_en_bloque:
-                valor = str(reporte.get(col, 'N/A'))
-                
-                # Lógica de color según el valor
-                clase_status = "status-neutral"
-                if any(ok in valor.upper() for ok in ["OK", "PERFECTO", "BUENO"]): clase_status = "status-ok"
-                elif any(err in valor.upper() for err in ["FALLA", "MALO", "REVISAR", "SUCIO"]): clase_status = "status-fail"
-                
-                st.markdown(f"""
-                    <div class="data-row">
-                        <div class="data-label">{col}</div>
-                        <div class="data-value <span class='{clase_status}'>{valor}</span></div>
-                    </div>
-                """, unsafe_allow_html=True)
-                columnas_ya_vistas.append(col)
+        fig = px.pie(names=infra_cols, values=[1]*len(infra_cols), hole=0.7,
+                     color=estados, color_discrete_map={
+                         'PERFECTO': '#00CC96', 'CON PROBLEMAS': '#EF553B', 
+                         'SUCIO/ROTO': '#AB63FA', 'NO FUNCIONA': '#FFA15A'
+                     })
+        fig.update_layout(showlegend=True, margin=dict(t=0, b=0, l=0, r=0), 
+                          paper_bgcolor='rgba(0,0,0,0)', font_color="white")
+        st.plotly_chart(fig, use_container_width=True)
 
-            # Agregar observaciones específicas del bloque si existen
-            obs_del_bloque = [c for c in df.columns if 'OBSERV' in c.upper() and any(k in c.upper() for k in titulo_sec.split())]
-            for obs_col in obs_del_bloque:
-                texto_obs = str(reporte.get(obs_col, '')).strip()
-                if texto_obs.lower() not in ['nan', '', '.']:
-                    st.markdown(f'<div class="obs-container"><b>Observaciones:</b> {texto_obs}</div>', unsafe_allow_html=True)
-                    columnas_ya_vistas.append(obs_col)
+    with c2:
+        st.subheader("🛠️ Checklist Técnico")
+        cols_check = st.columns(2)
+        for i, c in enumerate(infra_cols):
+            val = str(reporte.get(c)).upper()
+            target_col = cols_check[0] if i % 2 == 0 else cols_check[1]
+            if "PERFECTO" in val or "OK" in val: 
+                target_col.success(f"✅ {c}")
+            else: 
+                target_col.error(f"⚠️ {c}: {val}")
 
-    # --- SECCIÓN DE FOTOS (Visualización limpia) ---
-    if foto_cols:
-        st.markdown('<div class="section-header">4. REGISTRO FOTOGRÁFICO</div>', unsafe_allow_html=True)
-        # Mostramos fotos en columnas de 2 para mantener tamaño grande tipo Word
-        for i in range(0, len(foto_cols), 2):
-            cols_img = st.columns(2)
-            for idx, f_col in enumerate(foto_cols[i:i+2]):
-                link = str(reporte.get(f_col, ''))
-                if "http" in link:
-                    with cols_img[idx]:
-                        st.image(link.split(';')[0], caption=f_col, use_container_width=True)
-                columnas_ya_vistas.append(f_col)
+    st.divider()
 
-    # --- DATOS ADICIONALES (Cualquier columna que sobre) ---
-    sobrantes = [c for c in df.columns if c not in columnas_ya_vistas]
-    if sobrantes:
-        with st.expander("Ver otros datos del sistema"):
-            for s in sobrantes:
-                val = reporte.get(s)
-                if pd.notna(val):
-                    st.write(f"**{s}:** {val}")
+    # Sección de Observaciones y Fotos
+    o1, o2 = st.columns(2)
+    
+    with o1:
+        st.subheader("📝 Observaciones Detalladas")
+        all_obs = [c for c in df.columns if 'OBSERVACIONES' in c.upper()]
+        for obs in all_obs:
+            txt = str(reporte.get(obs, '')).strip()
+            if txt.lower() not in ['nan', '', 'none', '.']:
+                st.info(f"**{obs}:**\n\n{txt}")
+
+    with o2:
+        st.subheader("📸 Evidencia")
+        col_f = [c for c in df.columns if 'FOTO' in c.upper()]
+        if col_f:
+            links = str(reporte.get(col_f[0], ''))
+            if "http" in links:
+                for link in links.split(';'):
+                    if link.strip():
+                        st.image(link.strip(), use_container_width=True)
+            else: 
+                st.write("No hay fotos disponibles o el link es privado.")
 
 else:
-    st.error("No se encontró el archivo .xlsx en la carpeta.")
+    st.error("Esperando archivo de datos (.xlsx) en la carpeta del proyecto...")
