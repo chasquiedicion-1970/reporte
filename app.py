@@ -4,7 +4,7 @@ import glob
 import plotly.express as px
 
 # --- CONFIGURACIÓN ---
-st.set_page_config(page_title="Dashboard Integral Kioscos IA", layout="wide")
+st.set_page_config(page_title="Dashboard Kioscos IA", layout="wide")
 
 st.markdown("""
     <style>
@@ -21,12 +21,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def cargar_datos():
-    archivos = glob.glob("*.xlsx") + glob.glob("*.csv")
+    archivos = glob.glob("*.xlsx")
     if not archivos: return None
     try:
-        df = pd.read_excel(archivos[0]) if archivos[0].endswith('.xlsx') else pd.read_csv(archivos[0], encoding='utf-8-sig')
+        df = pd.read_excel(archivos[0])
         df.columns = df.columns.str.strip()
         return df
     except: return None
@@ -34,8 +34,9 @@ def cargar_datos():
 df = cargar_datos()
 
 if df is not None:
+    # Identificar columnas de control
     col_ub = [c for c in df.columns if 'UBICAC' in c.upper()][0]
-    col_fe = [c for c in df.columns if 'FECHA' in c.upper()][0]
+    col_fe = [c for c in df.columns if 'FECHA' in c.upper() or 'HORA DE INICIO' in c.upper()][0]
     
     # Barra Lateral
     st.sidebar.title("📊 Panel de Control")
@@ -46,12 +47,11 @@ if df is not None:
 
     st.markdown(f"<h1 style='color:#00d4ff;'>Reporte Maestro: {sel_ub}</h1>", unsafe_allow_html=True)
     
-    # --- MAPEADO DE CATEGORÍAS ---
-    # Definimos los campos de estado y sus observaciones relacionadas
+    # --- DEFINICIÓN DE CATEGORÍAS ---
     estructuras = {
         "🏗️ INFRAESTRUCTURA": {
             "estados": ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'PINTURA', 'LIMPIEZA'],
-            "notas": ['OBSERVACIONES PUERTAS', 'OBSERVACIONES ESTRUCTURA']
+            "notas": ['OBSERVACIONES PUERTAS', 'OBSERVACIONES ESTRUCTURA', 'DESCRIPCION DE LA INFRAESTRUCTURA']
         },
         "🤖 MAQUINARIA Y SISTEMAS": {
             "estados": ['ENERGIA', 'INTERNET', 'CABLEADO', 'CAMARAS SEGURIDAD', 'LOCKERS', 'ILUMINACIÓN'],
@@ -59,17 +59,18 @@ if df is not None:
         },
         "🖥️ PANTALLAS Y MULTIMEDIA": {
             "estados": ['TOTEM IZQUIERDO', 'TOTEM DERECHO', 'TV IZQUIERDO', 'TV DERECHO'],
-            "notas": ['OBSERVACIONES PANTALLAS']
+            "notas": ['OBSERVACIONES PANTALLAS', 'Nota de pantallas y multimedia']
         }
     }
 
-    columnas_mostradas = [col_ub, col_fe, 'TU NOMBRE', 'ID', 'HORA DE INICIO', 'HORA DE FINALIZACIÓN', 'CORREO ELECTRÓNICO']
+    # Inicializamos la lista de columnas usadas para evitar el NameError
+    columnas_usadas = [col_ub, col_fe, 'ID', 'Hora de inicio', 'Hora de finalización', 'Correo electrónico', 'Nombre']
 
-    # Renderizado Dinámico
+    # Renderizado Dinámico por Categoría
     for titulo, contenido in estructuras.items():
         st.markdown(f"<div class='category-box'><h2 class='neon-header'>{titulo}</h2>", unsafe_allow_html=True)
         
-        # Mostrar Estados (Checks)
+        # Estados
         checks = [c for c in contenido["estados"] if c in df.columns]
         if checks:
             cols = st.columns(len(checks))
@@ -79,38 +80,37 @@ if df is not None:
                     st.write(f"**{c}**")
                     if "PERFECTO" in val or "OK" in val: st.success("🟢 OK")
                     else: st.warning(f"⚠️ {val}")
-                columnas_mostradas.append(c)
+                columnas_usadas.append(c)
 
-        # Mostrar Observaciones de esta categoría
+        # Notas/Observaciones de la categoría
         notas = [n for n in contenido["notas"] if n in df.columns]
         for n in notas:
             txt = str(reporte.get(n, '')).strip()
             if txt.lower() not in ['nan', '', 'none', '.']:
-                st.markdown(f"<div class='obs-box'><b>Nota de {titulo.lower()}:</b><br>{txt}</div>", unsafe_allow_html=True)
-                columnas_mostradas.append(n)
+                st.markdown(f"<div class='obs-box'><b>Observación:</b><br>{txt}</div>", unsafe_allow_html=True)
+                columnas_usadas.append(n)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- SECCIÓN DE "MÁS CELDAS" (PARA NO OMITIR NADA) ---
+    # --- SECCIÓN DE FOTOS ---
     foto_cols = [c for c in df.columns if 'FOTO' in c.upper()]
-    otros_cols = [c for c in df.columns if c not in columnas_usadas and c not in foto_cols]
-    
-    if otros_cols:
-        with st.expander("➕ Ver celdas adicionales y detalles de registro"):
-            c1, c2 = st.columns(2)
-            for i, col in enumerate(otros_cols):
-                target = c1 if i % 2 == 0 else c2
-                val = reporte.get(col)
-                if pd.notna(val) and str(val).strip() != "":
-                    target.write(f"**{col}:** {val}")
-
-    # --- FOTOS AL FINAL ---
     if foto_cols:
-        st.subheader("📸 Evidencia Fotográfica")
-        for f in foto_cols:
-            links = str(reporte.get(f, ''))
-            if "http" in links:
-                for link in links.split(';'):
-                    st.image(link.strip(), caption=f"Evidencia: {f}", use_container_width=True)
+        st.subheader("📸 Vistas del Kiosco")
+        f_cols = st.columns(len(foto_cols))
+        for i, f in enumerate(foto_cols):
+            link = str(reporte.get(f, ''))
+            if "http" in link:
+                with f_cols[i]:
+                    st.image(link.split(';')[0], caption=f, use_container_width=True)
+            columnas_usadas.append(f)
+
+    # --- OTROS DETALLES (Evita el error de NameError) ---
+    otros_cols = [c for c in df.columns if c not in columnas_usadas]
+    if otros_cols:
+        with st.expander("➕ Ver celdas adicionales"):
+            for col in otros_cols:
+                val = reporte.get(col)
+                if pd.notna(val):
+                    st.write(f"**{col}:** {val}")
 
 else:
-    st.error("Esperando archivo de datos...")
+    st.error("Archivo Excel no detectado.")
