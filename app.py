@@ -10,74 +10,102 @@ IMGBB_API_KEY = "375f94b0781e8b8b0d2ffa0132d8edca"
 
 st.set_page_config(page_title="Kioscos IA - Gestión de Operaciones", layout="wide")
 
-# Estilo Visual Kioscos IA (Dark Mode + Neón)
+# Estilo Visual Kioscos IA
 st.markdown("""
     <style>
     .stApp { background-color: #020617; color: #f8fafc; }
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [data-baseweb="tab"] { background-color: #0f172a; border-radius: 5px; color: white; padding: 10px 20px; }
-    .stTabs [aria-selected="true"] { background-color: #00d4ff !important; color: black !important; font-weight: bold; }
     .section-card { background: #0f172a; padding: 25px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 20px; }
-    .neon-text { color: #00d4ff; font-weight: bold; }
+    .stTabs [aria-selected="true"] { background-color: #00d4ff !important; color: black !important; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
 tab1, tab2 = st.tabs(["📝 REGISTRO DE INSPECCIÓN", "🛠️ DASHBOARD TÉCNICO"])
 
-# --- PARTE 1: INGRESO DE DATOS (SUPERVISOR) ---
+# --- PARTE 1: INGRESO DE DATOS (ORDEN EXACTO SEGÚN PANTALLAZOS) ---
 with tab1:
     st.title("📋 Nuevo Reporte de Visita")
     
     with st.form("main_form", clear_on_submit=True):
-        # 1. Información General
+        # 1. INFO GENERAL
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.subheader("📍 Información General")
+        st.subheader("📍 1. Información General")
         c1, c2 = st.columns(2)
-        tecnico = c1.text_input("1. Nombre del Técnico / Supervisor")
-        ubicacion = c2.selectbox("3. Ubicación del Módulo", [
+        tecnico = c1.text_input("Nombre del Técnico / Supervisor")
+        ubicacion = c2.selectbox("Ubicación del Módulo", [
             "LA PUNTA", "SALAVERRY REAL PLAZA", "PERSHING - DOMINGO ORUE", 
             "ARENALES - DOMINGO CUETO", "VIVANDA JAVIER PRADO", "PASTIPAN JAVIER PRADO",
             "U: RICARDO PALMA", "CHACARILLA", "JESUS MARIA", "MAGDALENA"
         ])
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 2. Estructura (Puertas y Fachada)
+        # 2. ESTRUCTURA (PUERTAS)
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.subheader("🏗️ Estructura y Puertas")
+        st.subheader("🏗️ 2. Estructura y Puertas")
         r1, r2, r3, r4 = st.columns(4)
         p_izq = r1.radio("Piloto Izquierdo", ["Perfecto", "Con Problemas", "No Funciona"])
         c_der = r2.radio("Copiloto Derecho", ["Perfecto", "Con Problemas", "No Funciona"])
         p_del = r3.radio("Delantera", ["Perfecto", "Con Problemas", "No Funciona"])
         p_pos = r4.radio("Posterior", ["Perfecto", "Con Problemas", "No Funciona"])
-        obs_p = st.text_input("Observaciones de Puertas / Fachada")
+        obs_p = st.text_input("Observaciones Puertas")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 3. Pantallas e IT
+        # 3. INTERIORES
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.subheader("🖥️ Pantallas e IT")
+        st.subheader("🏠 3. Interiores")
         i1, i2, i3, i4 = st.columns(4)
-        t_izq = i1.radio("Totem Izquierdo", ["Perfecto", "Falla"])
-        t_der = i2.radio("Totem Derecho", ["Perfecto", "Falla"])
-        tv_izq = i3.radio("TV Izquierdo", ["Perfecto", "Falla"])
-        tv_der = i4.radio("TV Derecho", ["Perfecto", "Falla"])
-        obs_pan = st.text_input("Observaciones de Pantallas")
+        muebles = i1.radio("Muebles", ["Perfecto", "Sucio/Roto"])
+        cableado = i2.radio("Cableado", ["Perfecto", "Desordenado"])
+        energia = i3.radio("Energía", ["Perfecto", "Falla"])
+        ilumina = i4.radio("Iluminación", ["Perfecto", "Falla"])
+        obs_int = st.text_input("Observaciones Interiores")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 4. Fotos (Subida de 5 a 10)
+        # 4. IT (PANTALLAS)
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.subheader("📸 Registro Fotográfico")
-        uploaded_images = st.file_uploader("Sube la evidencia (Mínimo 5 - Máximo 10)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
+        st.subheader("🖥️ 4. IT y Pantallas")
+        it1, it2, it3, it4, it5 = st.columns(5)
+        leds_s = it1.radio("Leds Superiores", ["Perfecto", "Falla"])
+        t_izq = it2.radio("Totem Izquierdo", ["Perfecto", "Falla"])
+        t_der = it3.radio("Totem Derecho", ["Perfecto", "Falla"])
+        tv_izq = it4.radio("TV Izquierdo", ["Perfecto", "Falla"])
+        tv_der = it5.radio("TV Derecho", ["Perfecto", "Falla"])
+        obs_pan = st.text_input("Observaciones Pantallas")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Botón de Envío
-        submit = st.form_submit_button("✅ FINALIZAR Y ENVIAR REPORTE")
+        # 5. OTROS / MAQUINAS
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("⚙️ 5. Otros y Máquinas")
+        o1, o2, o3, o4 = st.columns(4)
+        internet = o1.radio("Internet", ["Perfecto", "Falla"])
+        camaras = o2.radio("Cámaras Seguridad", ["Perfecto", "Falla"])
+        m_izq = o3.radio("Máquina Izquierda", ["Perfecto", "Falla"])
+        m_der = o4.radio("Máquina Derecha", ["Perfecto", "Falla"])
+        obs_gen = st.text_area("Observaciones Generales / Otros")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # 6. BRANDING Y LIMPIEZA
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("✨ 6. Branding y Limpieza")
+        b1, b2, b3 = st.columns(3)
+        branding = b1.radio("Branding", ["Perfecto", "Dañado"])
+        l_int = b2.radio("Limpieza Interna", ["Perfecto", "Sucio"])
+        l_ext = b3.radio("Limpieza Externa", ["Perfecto", "Sucio"])
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # 7. FOTOS
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("📸 7. Registro Fotográfico")
+        uploaded_images = st.file_uploader("Sube entre 5 y 10 fotos", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        submit = st.form_submit_button("✅ ENVIAR REPORTE COMPLETO")
 
         if submit:
             if not tecnico or not uploaded_images:
-                st.warning("⚠️ Debes ingresar tu nombre y subir las fotos de evidencia.")
+                st.warning("⚠️ Debes ingresar tu nombre y subir las fotos.")
             else:
                 links_fotos = []
-                with st.spinner("Subiendo fotos a la nube..."):
+                with st.spinner("Subiendo fotos y guardando reporte..."):
                     for file in uploaded_images[:10]:
                         try:
                             payload = {"key": IMGBB_API_KEY, "image": base64.b64encode(file.read()).decode('utf-8')}
@@ -86,53 +114,10 @@ with tab1:
                                 links_fotos.append(res.json()['data']['url'])
                         except: pass
                     
-                    # Preparación de datos para el Puente de Google
                     data_to_send = {
                         "action": "insertar",
-                        "tecnico": tecnico,
-                        "ubicacion": ubicacion,
+                        "tecnico": tecnico, "ubicacion": ubicacion,
                         "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
-                        "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_pan,
-                        "fotos": ";".join(links_fotos)
-                    }
-                    
-                    try:
-                        resp = requests.post(URL_BRIDGE, json=data_to_send)
-                        if resp.status_code == 200:
-                            st.success("✅ ¡Datos y fotos guardados en Google Sheets!")
-                            st.balloons()
-                    except:
-                        st.error("Error al conectar con el servidor de Google.")
-
-# --- PARTE 2: VISUALIZACIÓN TÉCNICA ---
-with tab2:
-    st.title("🛠️ Panel de Control y Gestión")
-    if st.button("🔄 Sincronizar con Base de Datos"):
-        try:
-            r = requests.get(URL_BRIDGE)
-            data = r.json()
-            if len(data) > 1:
-                df_view = pd.DataFrame(data[1:], columns=data[0])
-                for index, row in df_view.iterrows():
-                    # Color según estado
-                    estado = row['Estado_Gestion']
-                    emoji = "🟢" if estado == "RESUELTO" else "🔴"
-                    
-                    with st.expander(f"{emoji} {row['Ubicacion']} - {row['Fecha']}"):
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            st.write(f"**Técnico:** {row['Tecnico']}")
-                            st.write(f"**Estado:** {estado}")
-                            st.write(f"**Puertas:** {row['Piloto_Izquierdo']} / {row['Copiloto_Derecho']}")
-                        with col_b:
-                            st.write(f"**Obs:** {row['Obs_Puertas']}")
-                        
-                        if row['Fotos']:
-                            st.markdown("---")
-                            st.write("**Evidencia Fotográfica:**")
-                            f_list = str(row['Fotos']).split(";")
-                            st.image(f_list, width=250)
-            else:
-                st.info("No hay reportes previos.")
-        except:
-            st.error("Error al leer la base de datos.")
+                        "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina, "obs_int": obs_int,
+                        "leds_s": leds_s, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_pan,
+                        "internet": internet, "camaras": camaras
