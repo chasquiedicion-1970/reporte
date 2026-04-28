@@ -3,105 +3,104 @@ import pandas as pd
 import glob
 import plotly.express as px
 
-# --- CONFIGURACIÓN ---
-st.set_page_config(page_title="Kioscos IA - Mantenimiento", layout="wide")
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="Dashboard Kioscos IA", layout="wide", initial_sidebar_state="expanded")
 
-st.title("📊 Estado de Infraestructura - Kioscos IA (Versión 8)")
+# Estilo personalizado para las tarjetas (Métrica)
+st.markdown("""
+    <style>
+    [data-testid="stMetricValue"] { font-size: 24px; color: #00d4ff; }
+    .stAlert { border-radius: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-def cargar_datos_limpios():
-    archivos_excel = glob.glob("*.xlsx")
-    archivos_csv = glob.glob("*.csv")
-    df = None
+def cargar_datos():
+    archivos = glob.glob("*.xlsx") + glob.glob("*.csv")
+    if not archivos: return None
     try:
-        if archivos_excel:
-            df = pd.read_excel(archivos_excel[0])
-        elif archivos_csv:
-            df = pd.read_csv(archivos_csv[0], encoding='utf-8-sig')
-        if df is not None:
-            df.columns = df.columns.str.strip()
-    except Exception as e:
-        st.error(f"Error al leer el archivo: {e}")
-    return df
+        if archivos[0].endswith('.xlsx'): return pd.read_excel(archivos[0])
+        return pd.read_csv(archivos[0], encoding='utf-8-sig')
+    except: return None
 
-df = cargar_datos_limpios()
+df = cargar_datos()
 
 if df is not None:
-    # Identificación de columnas clave
-    col_ubicacion = [c for c in df.columns if 'UBICAC' in c.upper()][0]
-    col_fecha = [c for c in df.columns if 'FECHA' in c.upper()][0]
+    df.columns = df.columns.str.strip()
     
-    st.sidebar.header("Filtros de Inspección")
-    ubicaciones = df[col_ubicacion].dropna().unique()
-    kiosco_sel = st.sidebar.selectbox("📍 Seleccionar Ubicación:", ubicaciones)
+    # Identificar columnas
+    col_ub = [c for c in df.columns if 'UBICAC' in c.upper()][0]
+    col_fe = [c for c in df.columns if 'FECHA' in c.upper()][0]
+    col_nom = [c for c in df.columns if 'NOMBRE' in c.upper() or 'TU NOMBRE' in c.upper()][0]
+
+    # --- SIDEBAR ---
+    st.sidebar.image("https://via.placeholder.com/150?text=Kioscos+IA", width=100) # Aquí podrías poner tu logo
+    st.sidebar.title("Panel de Control")
     
-    df_kiosco = df[df[col_ubicacion] == kiosco_sel].sort_values(by=col_fecha, ascending=False)
-    fechas = df_kiosco[col_fecha].dropna().unique()
+    sel_ub = st.sidebar.selectbox("📍 Ubicación", df[col_ub].unique())
+    df_filtrado = df[df[col_ub] == sel_ub].sort_values(by=col_fe, ascending=False)
     
-    if len(fechas) > 0:
-        fecha_sel = st.sidebar.selectbox("📅 Seleccionar Fecha de Reporte:", fechas)
-        reporte = df_kiosco[df_kiosco[col_fecha] == fecha_sel].iloc[0]
+    sel_fe = st.sidebar.selectbox("📅 Fecha de Reporte", df_filtrado[col_fe].unique())
+    reporte = df_filtrado[df_filtrado[col_fe] == sel_fe].iloc[0]
 
-        st.markdown(f"**Inspección realizada por:** {reporte.get('TU NOMBRE', 'N/A')}")
-        
-        col_graf, col_met = st.columns([1, 2])
-        
-        # Componentes Críticos
-        infra_cols_esperadas = ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'CABLEADO', 'ENERGIA', 'INTERNET', 'CAMARAS SEGURIDAD']
-        infra_cols = [c for c in infra_cols_esperadas if c in df.columns]
-        
-        estados_actuales = [str(reporte.get(c, 'NO EVALUADO')).upper() for c in infra_cols]
-        df_resumen = pd.DataFrame({'Componente': infra_cols, 'Estado': estados_actuales})
-        
-        with col_graf:
-            fig = px.pie(df_resumen, names='Estado', title="Resumen de Salud",
-                         color='Estado', color_discrete_map={
-                             'PERFECTO': '#2ecc71', 'CON PROBLEMAS': '#f1c40f', 
-                             'NO FUNCIONA': '#e74c3c', 'SUCIO/ROTO': '#e67e22', 'NO EVALUADO': '#95a5a6'
-                         }, hole=0.6)
-            st.plotly_chart(fig, use_container_width=True)
+    # --- CUERPO PRINCIPAL ---
+    st.title("🖥️ Monitor de Infraestructura")
+    
+    # Fila de Indicadores (Tarjetas como en la imagen)
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Módulo Seleccionado", sel_ub)
+    m2.metric("Inspector", reporte[col_nom])
+    m3.metric("Fecha", str(sel_fe))
 
-        with col_met:
-            st.subheader("🛠️ Detalle Técnico")
-            # Mostramos el estado de cada componente
-            for c in infra_cols:
-                val = str(reporte.get(c)).upper().strip()
-                if val == "PERFECTO": st.success(f"**{c}:** OK")
-                elif val in ["CON PROBLEMAS", "SUCIO/ROTO"]: st.warning(f"**{c}:** {val}")
-                elif val == "NO FUNCIONA": st.error(f"**{c}:** {val}")
-                else: st.write(f"**{c}:** No evaluado")
+    st.divider()
 
-        st.divider()
+    # Layout de dos columnas para Gráfico y Detalles
+    c1, c2 = st.columns([1.2, 2])
+
+    with c1:
+        st.subheader("📊 Estado de Salud")
+        items = ['DELANTERA', 'POSTERIOR', 'MUEBLES', 'CABLEADO', 'ENERGIA', 'INTERNET', 'CAMARAS SEGURIDAD']
+        infra_cols = [c for c in items if c in df.columns]
+        estados = [str(reporte.get(c, 'N/A')).upper() for c in infra_cols]
         
-        # --- NUEVA SECCIÓN DE OBSERVACIONES DETALLADAS ---
-        st.subheader("📝 Notas y Observaciones Específicas")
-        columnas_obs = [c for c in df.columns if 'OBSERVACIONES' in c.upper()]
-        
-        if columnas_obs:
-            for obs in columnas_obs:
-                texto = str(reporte.get(obs, '')).strip()
-                # Solo mostramos la observación si tiene texto y no es "nan"
-                if texto.lower() not in ['nan', 'none', '', '.']:
-                    st.markdown(f"**{obs.replace('OBSERVACIONES', '').strip()}:**")
-                    st.info(texto)
-        else:
-            st.write("No se encontraron notas adicionales en este reporte.")
+        fig = px.pie(names=estados, values=[1]*len(estados), hole=0.7,
+                     color=estados, color_discrete_map={
+                         'PERFECTO': '#00CC96', 'CON PROBLEMAS': '#EF553B', 
+                         'SUCIO/ROTO': '#AB63FA', 'NO FUNCIONA': '#FFA15A'
+                     })
+        fig.update_layout(showlegend=True, margin=dict(t=0, b=0, l=0, r=0))
+        st.plotly_chart(fig, use_container_width=True)
 
-        st.divider()
+    with c2:
+        st.subheader("🛠️ Checklist Técnico")
+        cols_check = st.columns(2)
+        for i, c in enumerate(infra_cols):
+            val = str(reporte.get(c)).upper()
+            target_col = cols_check[0] if i % 2 == 0 else cols_check[1]
+            if "PERFECTO" in val: target_col.success(f"✅ {c}")
+            else: target_col.error(f"⚠️ {c}: {val}")
 
-        # --- SECCIÓN DE FOTOGRAFÍAS ---
-        st.subheader("📸 Evidencia Fotográfica")
-        col_fotos = [c for c in df.columns if 'FOTO' in c.upper()]
-        if col_fotos:
-            fotos_str = str(reporte.get(col_fotos[0], ''))
-            if fotos_str.lower() not in ['nan', 'none', '']:
-                urls = [url.strip() for url in fotos_str.split(';') if url.strip()]
-                for i, url in enumerate(urls):
-                    st.markdown(f"**[🔍 Abrir Foto {i+1}]({url})**")
-                    try: st.image(url, width=400)
-                    except: pass
-            else: st.write("Sin fotos adjuntas.")
+    st.divider()
 
-    else:
-        st.warning("No hay reportes para esta ubicación.")
+    # Sección de Observaciones y Fotos (Abajo para que respire el diseño)
+    o1, o2 = st.columns(2)
+    
+    with o1:
+        st.subheader("📝 Observaciones Detalladas")
+        all_obs = [c for c in df.columns if 'OBSERVACIONES' in c.upper()]
+        for obs in all_obs:
+            txt = str(reporte.get(obs, '')).strip()
+            if txt.lower() not in ['nan', '', 'none', '.']:
+                st.info(f"**{obs}:**\n\n{txt}")
+
+    with o2:
+        st.subheader("📸 Evidencia")
+        col_f = [c for c in df.columns if 'FOTO' in c.upper()]
+        if col_f:
+            links = str(reporte.get(col_f[0], ''))
+            if "http" in links:
+                for link in links.split(';'):
+                    st.markdown(f"[🔗 Ver Fotografía Directa]({link.strip()})")
+            else: st.write("No hay fotos disponibles.")
+
 else:
-    st.error("⚠️ No se encontró el archivo de datos.")
+    st.error("Esperando archivo de datos...")
