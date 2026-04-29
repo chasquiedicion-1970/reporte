@@ -14,8 +14,8 @@ st.markdown("""
     <style>
     .stApp { background-color: #020617; color: #f8fafc; }
     .main-nav { background-color: #0f172a; padding: 20px; border-radius: 15px; border: 1px solid #00d4ff; margin-bottom: 30px; text-align: center; }
-    .report-box { background-color: #0f172a; padding: 25px; border-radius: 15px; border-left: 5px solid #00d4ff; margin-bottom: 20px; }
-    .section-header { color: #00d4ff; font-weight: bold; border-bottom: 1px solid #1e293b; margin-top: 15px; margin-bottom: 10px; }
+    .report-box { background-color: #0f172a; padding: 25px; border-radius: 15px; border-left: 5px solid #00d4ff; margin-bottom: 20px; border: 1px solid #1e293b; }
+    .section-header { color: #00d4ff; font-weight: bold; border-bottom: 1px solid #1e293b; margin-top: 15px; margin-bottom: 10px; font-size: 1.2rem; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -50,58 +50,83 @@ if menu == "SUPERVISOR (Ingreso)":
         tv_izq = it3.radio("TV Principal", ["OK", "Falla"])
         obs_pan = st.text_area("Observaciones Pantallas", key="obs_pan")
 
-        st.subheader("📸 Evidencia Fotografica")
+        st.subheader("📸 Evidencia Fotográfica")
         obs_gen = st.text_area("Observaciones Generales *")
         uploaded_images = st.file_uploader("Subir fotos (Máx 10)", accept_multiple_files=True)
 
-        if st.form_submit_button("✅ ENVIAR REPORTE"):
-            if not tecnico or not uploaded_images:
-                st.error("Faltan datos obligatorios.")
-            else:
-                with st.spinner("Subiendo datos..."):
-                    links = []
-                    for img in uploaded_images[:10]:
-                        res = requests.post("https://api.imgbb.com/1/upload", {"key": IMGBB_API_KEY, "image": base64.b64encode(img.read()).decode('utf-8')})
-                        if res.status_code == 200: links.append(res.json()['data']['url'])
-                    
-                    payload = {
-                        "action": "insertar", "tecnico": tecnico, "ubicacion": ubicacion,
-                        "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
-                        "muebles": "OK", "cableado": "OK", "energia": "OK", "ilumina": "OK", "obs_int": "N/A",
-                        "leds_s": "OK", "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": "OK", "obs_pan": obs_pan,
-                        "internet": "OK", "wifi": "OK", "lockers": "OK", "camaras": "OK", "m_izq": "OK", "m_der": "OK",
-                        "branding": "OK", "l_int": "OK", "l_ext": "OK", "l_vis": "OK", "obs_mod": "N/A",
-                        "obs_gen": obs_gen, "fotos": ";".join(links), "boton": "OK"
-                    }
-                    requests.post(URL_BRIDGE, json=payload)
-                    st.success("¡Reporte Guardado!")
+        submit = st.form_submit_button("✅ ENVIAR REPORTE")
 
-# --- MÓDULO 2: REPORTES (Estilo V9) ---
+    if submit:
+        if not tecnico or not uploaded_images:
+            st.error("⚠️ El nombre y las fotos son obligatorios.")
+        else:
+            with st.spinner("Subiendo datos y fotos..."):
+                links = []
+                for img in uploaded_images[:10]:
+                    try:
+                        res = requests.post("https://api.imgbb.com/1/upload", 
+                                           {"key": IMGBB_API_KEY, "image": base64.b64encode(img.read()).decode('utf-8')})
+                        if res.status_code == 200:
+                            links.append(res.json()['data']['url'])
+                    except:
+                        pass
+                
+                payload = {
+                    "action": "insertar", "tecnico": tecnico, "ubicacion": ubicacion,
+                    "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
+                    "muebles": "OK", "cableado": "OK", "energia": "OK", "iluminacion": "OK", "obs_int": "N/A",
+                    "leds_s": "OK", "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": "OK", "obs_pan": obs_pan,
+                    "internet": "OK", "wifi": "OK", "lockers": "OK", "camaras": "OK", "m_izq": "OK", "m_der": "OK",
+                    "branding": "OK", "l_int": "OK", "l_ext": "OK", "l_vis": "OK", "obs_mod": "N/A",
+                    "obs_gen": obs_gen, "fotos": ";".join(links), "boton": "OK"
+                }
+                
+                try:
+                    r = requests.post(URL_BRIDGE, json=payload)
+                    if r.status_code == 200:
+                        st.success("¡Reporte Guardado con éxito!")
+                        st.balloons()
+                except Exception as e:
+                    st.error(f"Error de conexión: {e}")
+
+# --- MÓDULO 2: REPORTES (Visualización Interactiva) ---
 else:
     st.header("📊 Consulta de Reportes")
-    
-    # Intentar cargar datos del Excel
     try:
         r = requests.get(URL_BRIDGE)
         data = r.json()
         if len(data) > 1:
             df = pd.DataFrame(data[1:], columns=data[0])
             
-            # Filtros de búsqueda
+            # Buscamos nombres de columnas ignorando tildes
+            col_ubi = [c for c in df.columns if 'Ubic' in c][0]
+            col_fec = [c for c in df.columns if 'Fecha' in c][0]
+            
             col_filt1, col_filt2 = st.columns(2)
-            kiosco_sel = col_filt1.selectbox("Seleccione Kiosco:", df['Ubicación'].unique())
+            kiosco_sel = col_filt1.selectbox("Seleccione Kiosco:", df[col_ubi].unique())
             
-            # Filtrar fechas disponibles para ese kiosco
-            df_kiosco = df[df['Ubicación'] == kiosco_sel]
-            fecha_sel = col_filt2.selectbox("Seleccione Fecha de Reporte:", df_kiosco['Fecha'].unique())
+            df_kiosco = df[df[col_ubi] == kiosco_sel]
+            fecha_sel = col_filt2.selectbox("Seleccione Fecha:", df_kiosco[col_fec].unique())
             
-            # Obtener el reporte específico
-            reporte = df_kiosco[df_kiosco['Fecha'] == fecha_sel].iloc[0]
+            reporte = df_kiosco[df_kiosco[col_fec] == fecha_sel].iloc[0]
             
-            # DESPLIEGUE ESTILO REPORTE V9
             st.markdown(f'<div class="report-box">', unsafe_allow_html=True)
-            st.write(f"### REPORTE: {kiosco_sel}")
-            st.write(f"**Fecha:** {fecha_sel} | **Técnico Responsable:** {reporte['Técnico']}")
+            st.write(f"### DETALLE DE INSPECCIÓN: {kiosco_sel}")
+            st.write(f"**Fecha:** {fecha_sel} | **Técnico:** {reporte.get('Técnico', 'N/A')}")
             
-            st.markdown('<div class="section-header">ESTRUCTURA Y PUERTAS</div>', unsafe_allow_html=True)
-            c
+            # Secciones
+            st.markdown('<div class="section-header">⚙️ ESTADO DE ESTRUCTURA</div>', unsafe_allow_html=True)
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Piloto Izq", reporte.get('Piloto Izquierdo', 'N/A'))
+            m2.metric("Copiloto Der", reporte.get('Copiloto Derecho', 'N/A'))
+            m3.metric("Delantera", reporte.get('Delantera', 'N/A'))
+            m4.metric("Posterior", reporte.get('Posterior', 'N/A'))
+            
+            st.markdown('<div class="section-header">🖥️ SISTEMAS IT</div>', unsafe_allow_html=True)
+            s1, s2, s3 = st.columns(3)
+            s1.metric("Totem Izq", reporte.get('Totem Izquierdo', 'N/A'))
+            s2.metric("Totem Der", reporte.get('Totem Derecho', 'N/A'))
+            s3.metric("TV Principal", reporte.get('TV Izquierdo', 'N/A'))
+
+            st.markdown('<div class="section-header">📝 COMENTARIOS GENERALES</div>', unsafe_allow_html=True)
+            st.info(reporte.get('Obs Generales', 'Sin observaciones
