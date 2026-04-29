@@ -15,6 +15,7 @@ KIOSCOS_OFICIALES = [
 
 st.set_page_config(page_title="Kioscos IA - Gestión Central", layout="wide")
 
+# Estilo
 st.markdown("""
     <style>
     .stApp { background-color: #020617; color: #f8fafc; }
@@ -30,10 +31,13 @@ menu = st.sidebar.radio("MÓDULO SELECCIONADO", ["SUPERVISOR (Ingreso)", "REPORT
 
 # --- MÓDULO 1: SUPERVISOR ---
 if menu == "SUPERVISOR (Ingreso)":
-    st.header("📝 Registro de Inspección Oficial")
-    with st.form("form_sup_final", clear_on_submit=True):
+    st.header("📝 Registro de Inspección")
+    
+    # Usamos st.container para que los datos no se borren al validar
+    with st.form("form_sup_final"):
         c1, c2 = st.columns(2)
-        tec = c1.text_input("Técnico Responsable *")
+        # Marcado como obligatorio visualmente
+        tec = c1.text_input("Técnico Responsable (CAMPO OBLIGATORIO) *", placeholder="Escriba su nombre completo")
         ubi = c2.selectbox("Seleccione Kiosco Oficial *", KIOSCOS_OFICIALES)
         
         st.markdown('<div class="section-header">🏗️ Estructura y Puertas</div>', unsafe_allow_html=True)
@@ -75,25 +79,27 @@ if menu == "SUPERVISOR (Ingreso)":
         l_ext = cl3.radio("Limpieza Ext.", ["OK", "Sucio"])
         obs_mod = st.text_area("Observaciones Módulo / Limpieza")
 
-        st.subheader("📸 Evidencia Final")
+        st.subheader("📸 Evidencia (Opcional)")
         obs_gen = st.text_area("Comentarios Supervisor *")
-        fotos_u = st.file_uploader("Fotos de Inspección", accept_multiple_files=True)
+        fotos_u = st.file_uploader("Fotos (Opcional si todo está OK)", accept_multiple_files=True)
 
         submit = st.form_submit_button("✅ ENVIAR REPORTE COMPLETO")
 
+    # Lógica de procesamiento fuera del formulario para persistencia
     if submit:
-        if not tec or not fotos_u:
-            st.error("⚠️ El nombre y las fotos son obligatorios.")
+        if not tec:
+            st.error("❌ ERROR: El nombre del técnico es obligatorio. Por favor rellénelo antes de enviar.")
         else:
             with st.spinner("Sincronizando con Excel..."):
                 links = []
-                for img in fotos_u[:10]:
-                    try:
-                        r_img = requests.post("https://api.imgbb.com/1/upload", data={"key": IMGBB_API_KEY, "image": base64.b64encode(img.read()).decode('utf-8')})
-                        if r_img.status_code == 200:
-                            links.append(r_img.json()['data']['url'])
-                    except:
-                        pass
+                if fotos_u:
+                    for img in fotos_u[:10]:
+                        try:
+                            r_img = requests.post("https://api.imgbb.com/1/upload", data={"key": IMGBB_API_KEY, "image": base64.b64encode(img.read()).decode('utf-8')})
+                            if r_img.status_code == 200:
+                                links.append(r_img.json()['data']['url'])
+                        except:
+                            pass
                 
                 payload = {
                     "action": "insertar",
@@ -112,7 +118,7 @@ if menu == "SUPERVISOR (Ingreso)":
                         st.success("¡Reporte Guardado con éxito!")
                         st.balloons()
                 except:
-                    st.error("Error de conexión con la base de datos.")
+                    st.error("Error de conexión con el Excel.")
 
 # --- MÓDULO 2: REPORTES ---
 else:
@@ -135,6 +141,8 @@ else:
             st.subheader(f"📍 REPORTE TÉCNICO: {sel_k}")
             st.write(f"**Técnico:** {rep.get('Técnico', 'N/A')} | **Fecha:** {sel_f}")
             
+            # --- Secciones del Reporte ---
+            # ESTRUCTURA
             st.markdown('<div class="section-header">⚙️ ESTRUCTURA Y ACCESOS</div>', unsafe_allow_html=True)
             r1, r2, r3, r4 = st.columns(4)
             r1.metric("Piloto Izq", rep.get('Piloto Izquierdo', 'N/A'))
@@ -143,7 +151,8 @@ else:
             r4.metric("Posterior", rep.get('Posterior', 'N/A'))
             st.markdown(f"**Notas:**<div class='text-wrap'>{rep.get('Obs Puertas', 'N/A')}</div>", unsafe_allow_html=True)
 
-            st.markdown('<div class="section-header">🏠 INTERIORES</div>', unsafe_allow_html=True)
+            # INTERIORES
+            st.markdown('<div class="section-header">🏠 INTERIORES Y ENERGÍA</div>', unsafe_allow_html=True)
             i1, i2, i3, i4 = st.columns(4)
             i1.metric("Muebles", rep.get('Muebles', 'N/A'))
             i2.metric("Cableado", rep.get('Cableado', 'N/A'))
@@ -151,6 +160,7 @@ else:
             i4.metric("Luz", rep.get('Iluminación', 'N/A'))
             st.markdown(f"**Notas:**<div class='text-wrap'>{rep.get('Obs Interiores', 'N/A')}</div>", unsafe_allow_html=True)
 
+            # IT
             st.markdown('<div class="section-header">🖥️ SISTEMAS IT</div>', unsafe_allow_html=True)
             it1, it2, it3, it4 = st.columns(4)
             it1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
@@ -160,18 +170,20 @@ else:
             st.write(f"**LEDs:** {rep.get('Leds Superiores', 'N/A')}")
             st.markdown(f"**Notas:**<div class='text-wrap'>{rep.get('Obs Pantallas', 'N/A')}</div>", unsafe_allow_html=True)
 
-            st.markdown('<div class="section-header">🌐 CONECTIVIDAD</div>', unsafe_allow_html=True)
+            # OTROS
+            st.markdown('<div class="section-header">🌐 CONECTIVIDAD / SEGURIDAD</div>', unsafe_allow_html=True)
             o1, o2, o3, o4 = st.columns(4)
             o1.metric("Net", rep.get('Internet', 'N/A'))
             o2.metric("Wifi", rep.get('Wifi', 'N/A'))
             o3.metric("Cam", rep.get('Cámaras Seguridad', 'N/A'))
             o4.metric("Boton", rep.get('Boton Panico', 'N/A'))
 
+            # ESTÉTICA
             st.markdown('<div class="section-header">✨ ESTÉTICA</div>', unsafe_allow_html=True)
             st.write(f"**Branding:** {rep.get('Branding', 'N/A')} | **Limp Int:** {rep.get('Limp Interna', 'N/A')} | **Limp Ext:** {rep.get('Limp Externa', 'N/A')}")
             st.markdown(f"**Notas:**<div class='text-wrap'>{rep.get('Obs Modulo', 'N/A')}</div>", unsafe_allow_html=True)
 
-            st.markdown('<div class="section-header">📝 COMENTARIOS FINALES</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">📝 CONCLUSIONES</div>', unsafe_allow_html=True)
             st.markdown(f"<div class='text-wrap'>{rep.get('Obs Generales', 'N/A')}</div>", unsafe_allow_html=True)
             
             if rep.get('Fotos'):
