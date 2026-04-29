@@ -45,12 +45,12 @@ st.markdown(f'<div class="main-header"><h1>KIOSCOS IΛ</h1><p style="color:{COLO
 
 menu = st.sidebar.radio("MODALIDAD", ["📋 SUPERVISOR (Ingreso)", "📊 REPORTES (Consulta)"])
 
-# --- MÓDULO 1: SUPERVISOR (INGRESO TOTAL) ---
+# --- MÓDULO 1: SUPERVISOR ---
 if menu == "📋 SUPERVISOR (Ingreso)":
     st.subheader("📝 Registro Técnico Completo")
     with st.form("form_total"):
         c1, c2 = st.columns(2)
-        tec = c1.text_input("TÉCNICO RESPONSABLE (Obligatorio) *")
+        tec = c1.text_input("TÉCNICO RESPONSABLE (OBLIGATORIO) *")
         ubi = c2.selectbox("KIOSCO", KIOSCOS_OFICIALES)
         
         st.markdown('<div class="section-header">🏗️ Estructura y Accesos</div>', unsafe_allow_html=True)
@@ -59,7 +59,7 @@ if menu == "📋 SUPERVISOR (Ingreso)":
         c_der = col2.radio("Copiloto Der", ["Perfecto", "Falla"])
         p_del = col3.radio("Delantera", ["Perfecto", "Falla"])
         p_pos = col4.radio("Posterior", ["Perfecto", "Falla"])
-        obs_p = st.text_area("Notas Estructura", placeholder="Detalles de puertas...")
+        obs_p = st.text_area("Notas Estructura")
 
         st.markdown('<div class="section-header">🖥️ Sistemas IT y Pantallas</div>', unsafe_allow_html=True)
         it1, it2, it3, it4 = st.columns(4)
@@ -84,10 +84,9 @@ if menu == "📋 SUPERVISOR (Ingreso)":
         l_int = cl2.radio("Limp. Int", ["Limpio", "Sucio"])
         l_ext = cl3.radio("Limp. Ext", ["Limpio", "Sucio"])
         camaras = cl4.radio("Cámaras", ["OK", "Falla"])
-        obs_est = st.text_area("Notas Estética / Limpieza")
 
         st.markdown('<div class="section-header">Finalización</div>', unsafe_allow_html=True)
-        obs_gen = st.text_area("COMENTARIOS GENERALES *")
+        obs_gen = st.text_area("COMENTARIOS GENERALES")
         fotos_u = st.file_uploader("Evidencia (Opcional)", accept_multiple_files=True)
 
         submit = st.form_submit_button("✅ GUARDAR REPORTE COMPLETO")
@@ -109,42 +108,4 @@ if menu == "📋 SUPERVISOR (Ingreso)":
                     "action": "insertar", "tecnico": tec, "ubicacion": ubi,
                     "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
                     "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina, "obs_int": obs_int,
-                    "leds_s": leds, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_it,
-                    "branding": branding, "l_int": l_int, "l_ext": l_ext, "obs_mod": obs_est,
-                    "obs_gen": obs_gen, "fotos": ";".join(links)
-                }
-                try:
-                    requests.post(URL_BRIDGE, json=payload, timeout=30)
-                    st.success("✅ Reporte enviado correctamente.")
-                except: st.error("❌ Error al enviar.")
-
-# --- MÓDULO 2: REPORTES (MÁXIMA INFORMACIÓN) ---
-else:
-    st.subheader("📊 Consulta de Historial")
-    try:
-        response = requests.get(URL_BRIDGE, timeout=30)
-        data_json = response.json()
-        if len(data_json) > 1:
-            df = pd.DataFrame(data_json[1:], columns=data_json[0])
-            df = df[df['Ubicación'].isin(KIOSCOS_OFICIALES)]
-            
-            c1, c2 = st.columns(2)
-            k_sel = c1.selectbox("Kiosco", df['Ubicación'].unique())
-            f_sel = c2.selectbox("Fecha", df[df['Ubicación'] == k_sel]['Fecha'].unique())
-            
-            rep = df[(df['Ubicación'] == k_sel) & (df['Fecha'] == f_sel)].iloc[0]
-            
-            # --- PANEL DE REPORTE ---
-            st.markdown('<div class="report-card">', unsafe_allow_html=True)
-            st.write(f"### 📍 {k_sel}")
-            st.write(f"👷 **Responsable:** {rep.get('Técnico')} | 📅 **Fecha:** {f_sel}")
-            
-            # FILA IT
-            st.markdown('<div class="section-header">🖥️ SISTEMAS IT & PANTALLAS</div>', unsafe_allow_html=True)
-            it1, it2, it3, it4, it5 = st.columns(5)
-            it1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
-            it2.metric("Totem Der", rep.get('Totem Derecho', 'N/A'))
-            it3.metric("TV Izq", rep.get('TV Izquierdo', 'N/A'))
-            it4.metric("TV Der", rep.get('TV Derecha', 'N/A'))
-            it5.metric("LEDS", rep.get('Leds Superiores', 'N/A'))
-            st.markdown(f"**Notas IT:** <div class='text
+                    "leds_s": leds, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan
