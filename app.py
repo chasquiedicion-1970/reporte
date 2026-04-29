@@ -19,7 +19,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- NAVEGACIÓN PRINCIPAL ---
+# --- NAVEGACIÓN ---
 st.markdown('<div class="main-nav"><h1>🚀 SISTEMA KIOSCOS IA</h1></div>', unsafe_allow_html=True)
 menu = st.radio("SELECCIONE MÓDULO:", ["SUPERVISOR (Ingreso)", "REPORTES (Visualización)"], horizontal=True)
 
@@ -37,17 +37,17 @@ if menu == "SUPERVISOR (Ingreso)":
         
         st.subheader("🏗️ Estructura y Puertas")
         p1, p2, p3, p4 = st.columns(4)
-        p_izq = p1.radio("Piloto Izq", ["Perfecto", "Falla"])
-        c_der = p2.radio("Copiloto Der", ["Perfecto", "Falla"])
-        p_del = p3.radio("Delantera", ["Perfecto", "Falla"])
-        p_pos = p4.radio("Posterior", ["Perfecto", "Falla"])
+        p_izq = p1.radio("Piloto Izq", ["Perfecto", "Falla"], key="p1")
+        c_der = p2.radio("Copiloto Der", ["Perfecto", "Falla"], key="p2")
+        p_del = p3.radio("Delantera", ["Perfecto", "Falla"], key="p3")
+        p_pos = p4.radio("Posterior", ["Perfecto", "Falla"], key="p4")
         obs_p = st.text_area("Observaciones Puertas", key="obs_p")
 
         st.subheader("🖥️ Pantallas e IT")
         it1, it2, it3 = st.columns(3)
-        t_izq = it1.radio("Totem Izq", ["OK", "Falla"])
-        t_der = it2.radio("Totem Der", ["OK", "Falla"])
-        tv_izq = it3.radio("TV Principal", ["OK", "Falla"])
+        t_izq = it1.radio("Totem Izq", ["OK", "Falla"], key="it1")
+        t_der = it2.radio("Totem Der", ["OK", "Falla"], key="it2")
+        tv_izq = it3.radio("TV Principal", ["OK", "Falla"], key="it3")
         obs_pan = st.text_area("Observaciones Pantallas", key="obs_pan")
 
         st.subheader("📸 Evidencia Fotográfica")
@@ -87,7 +87,7 @@ if menu == "SUPERVISOR (Ingreso)":
                         st.success("¡Reporte Guardado!")
                         st.balloons()
                 except Exception as e:
-                    st.error(f"Error de conexión: {e}")
+                    st.error(f"Error: {e}")
 
 # --- MÓDULO 2: REPORTES ---
 else:
@@ -98,25 +98,44 @@ else:
         if len(data) > 1:
             df = pd.DataFrame(data[1:], columns=data[0])
             
-            # Limpieza de nombres de columnas
             c_ubi = [c for c in df.columns if 'Ubic' in c][0]
             c_fec = [c for c in df.columns if 'Fecha' in c][0]
             
             col_filt1, col_filt2 = st.columns(2)
             kiosco_sel = col_filt1.selectbox("Seleccione Kiosco:", df[c_ubi].unique())
             
-            df_kiosco = df[df[c_ubi] == kiosco_sel]
-            fecha_sel = col_filt2.selectbox("Seleccione Fecha:", df_kiosco[c_fec].unique())
+            df_k = df[df[c_ubi] == kiosco_sel]
+            fecha_sel = col_filt2.selectbox("Seleccione Fecha:", df_k[c_fec].unique())
             
-            reporte = df_kiosco[df_kiosco[c_fec] == fecha_sel].iloc[0]
+            rep = df_k[df_k[c_fec] == fecha_sel].iloc[0]
             
-            # --- DISEÑO DEL REPORTE V9 ---
             st.markdown('<div class="report-box">', unsafe_allow_html=True)
             st.subheader(f"📍 DETALLE: {kiosco_sel}")
-            st.write(f"**Fecha:** {fecha_sel} | **Responsable:** {reporte.get('Técnico', 'N/A')}")
+            st.write(f"**Fecha:** {fecha_sel} | **Responsable:** {rep.get('Técnico', 'N/A')}")
             
-            # Sección 1: Estructura
             st.markdown('<div class="section-header">⚙️ ESTRUCTURA</div>', unsafe_allow_html=True)
             m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Piloto Izq", reporte.get('Piloto Izquierdo', 'N/A'))
-            m2.metric("Copiloto Der", reporte.get('Copiloto Derecho', 'N
+            m1.metric("Piloto Izq", rep.get('Piloto Izquierdo', 'N/A'))
+            m2.metric("Copiloto Der", rep.get('Copiloto Derecho', 'N/A'))
+            m3.metric("Delantera", rep.get('Delantera', 'N/A'))
+            m4.metric("Posterior", rep.get('Posterior', 'N/A'))
+            
+            st.markdown('<div class="section-header">🖥️ SISTEMAS IT</div>', unsafe_allow_html=True)
+            s1, s2, s3 = st.columns(3)
+            s1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
+            s2.metric("Totem Der", rep.get('Totem Derecho', 'N/A'))
+            s3.metric("TV Principal", rep.get('TV Izquierdo', 'N/A'))
+
+            st.markdown('<div class="section-header">📝 OBSERVACIONES</div>', unsafe_allow_html=True)
+            st.info(rep.get('Obs Generales', 'Sin observaciones'))
+            
+            st.markdown('<div class="section-header">📸 GALERÍA</div>', unsafe_allow_html=True)
+            fotos_raw = rep.get('Fotos', '')
+            if fotos_raw:
+                st.image(str(fotos_raw).split(";"), use_container_width=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.info("No hay datos registrados.")
+    except Exception as e:
+        st.error(f"Error de conexión: {e}")
