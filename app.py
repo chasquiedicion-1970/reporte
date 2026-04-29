@@ -3,12 +3,11 @@ import requests
 import base64
 import pandas as pd
 
-# --- IDENTIDAD KIOSCOS IA (BRANDBOOK) ---
+# --- CONFIGURACIÓN DE IDENTIDAD KIOSCOS IA ---
 COLOR_BLUE_SEA = "#000059"
 COLOR_CIAN = "#66FBFC"
 COLOR_BLACK = "#000000"
 
-# URL de tu Google Apps Script (Verifica que sea la última generada)
 URL_BRIDGE = "https://script.google.com/macros/s/AKfycbwZHc5UdHwbx52lgLWL5_LPDEuDjft7_yWbDuR1lDyOZk05h3G4bKfwHjJuHpziNjTS/exec"
 IMGBB_API_KEY = "375f94b0781e8b8b0d2ffa0132d8edca"
 
@@ -18,9 +17,9 @@ KIOSCOS_OFICIALES = [
     "PASTIPAN JAVIER PRADO", "UNIVERSIDAD RICARDO PALMA", "SURCO WONG"
 ]
 
-st.set_page_config(page_title="Kioscos IA - Gestión Central", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="Kioscos IA - Gestión Total", layout="wide", page_icon="🚀")
 
-# --- ESTILO CORPORATIVO ---
+# --- CSS PROFESIONAL ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {COLOR_BLACK}; color: white; }}
@@ -31,58 +30,67 @@ st.markdown(f"""
     }}
     .section-header {{
         color: {COLOR_CIAN}; font-weight: bold; text-transform: uppercase;
-        border-bottom: 2px solid {COLOR_CIAN}; padding-bottom: 5px; margin: 20px 0 10px 0;
+        border-bottom: 2px solid {COLOR_CIAN}; padding-bottom: 5px; margin: 25px 0 10px 0;
     }}
-    .stForm, .report-box {{ 
+    .report-card {{ 
         background-color: {COLOR_BLUE_SEA} !important; 
-        padding: 25px !important; border-radius: 15px !important; 
-        border: 1px solid #1900AF !important; 
+        padding: 20px; border-radius: 15px; border: 1px solid #1900AF; margin-bottom: 15px;
     }}
     .text-wrap {{ white-space: pre-wrap; background: #000000; padding: 12px; border-radius: 8px; border: 1px solid #1900AF; color: #cbd5e1; }}
-    [data-testid="stMetricValue"] {{ color: {COLOR_CIAN} !important; }}
+    [data-testid="stMetricValue"] {{ color: {COLOR_CIAN} !important; font-size: 1.5rem !important; }}
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown(f'<div class="main-header"><h1>KIOSCOS IΛ</h1><p style="color:{COLOR_CIAN}; font-weight:bold;">EL FUTURO EN CADA ESQUINA</p></div>', unsafe_allow_html=True)
 
-menu = st.sidebar.radio("MODALIDAD", ["📋 SUPERVISOR", "📊 REPORTES"])
+menu = st.sidebar.radio("MODALIDAD", ["📋 SUPERVISOR (Ingreso)", "📊 REPORTES (Consulta)"])
 
-# --- MÓDULO SUPERVISOR ---
-if menu == "📋 SUPERVISOR":
-    st.subheader("📝 Registro de Inspección")
-    with st.form("form_registro", clear_on_submit=False):
+# --- MÓDULO 1: SUPERVISOR (INGRESO TOTAL) ---
+if menu == "📋 SUPERVISOR (Ingreso)":
+    st.subheader("📝 Registro Técnico Completo")
+    with st.form("form_total"):
         c1, c2 = st.columns(2)
         tec = c1.text_input("TÉCNICO RESPONSABLE (Obligatorio) *")
         ubi = c2.selectbox("KIOSCO", KIOSCOS_OFICIALES)
         
-        st.markdown('<div class="section-header">Infraestructura</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🏗️ Estructura y Accesos</div>', unsafe_allow_html=True)
         col1, col2, col3, col4 = st.columns(4)
         p_izq = col1.radio("Piloto Izq", ["Perfecto", "Falla"])
         c_der = col2.radio("Copiloto Der", ["Perfecto", "Falla"])
         p_del = col3.radio("Delantera", ["Perfecto", "Falla"])
         p_pos = col4.radio("Posterior", ["Perfecto", "Falla"])
-        obs_p = st.text_area("Notas Estructura")
+        obs_p = st.text_area("Notas Estructura", placeholder="Detalles de puertas...")
 
-        st.markdown('<div class="section-header">Sistemas IT & Pantallas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🖥️ Sistemas IT y Pantallas</div>', unsafe_allow_html=True)
         it1, it2, it3, it4 = st.columns(4)
         t_izq = it1.radio("Totem Izq", ["OK", "Falla"])
         t_der = it2.radio("Totem Der", ["OK", "Falla"])
         tv_izq = it3.radio("TV Izquierda", ["OK", "Falla"])
         tv_der = it4.radio("TV Derecha", ["OK", "Falla"])
-        obs_it = st.text_area("Notas Sistemas")
+        leds = st.radio("LEDS SUPERIORES", ["OK", "Falla"], horizontal=True)
+        obs_it = st.text_area("Notas IT / Pantallas")
 
-        st.markdown('<div class="section-header">Energía y Estética</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🏠 Energía e Interiores</div>', unsafe_allow_html=True)
         e1, e2, e3, e4 = st.columns(4)
-        energia = e1.radio("Energía", ["OK", "Falla"])
-        ilumina = e2.radio("Iluminación", ["OK", "Falla"])
-        branding = e3.radio("Branding", ["OK", "Dañado"])
-        limpieza = e4.radio("Limp. Gral", ["OK", "Sucio"])
+        muebles = e1.radio("Muebles", ["OK", "Falla"])
+        cableado = e2.radio("Cableado", ["OK", "Falla"])
+        energia = e3.radio("Energía", ["OK", "Falla"])
+        ilumina = e4.radio("Iluminación", ["OK", "Falla"])
+        obs_int = st.text_area("Notas Interiores")
+
+        st.markdown('<div class="section-header">✨ Estética y Seguridad</div>', unsafe_allow_html=True)
+        cl1, cl2, cl3, cl4 = st.columns(4)
+        branding = cl1.radio("Branding", ["OK", "Dañado"])
+        l_int = cl2.radio("Limp. Int", ["Limpio", "Sucio"])
+        l_ext = cl3.radio("Limp. Ext", ["Limpio", "Sucio"])
+        camaras = cl4.radio("Cámaras", ["OK", "Falla"])
+        obs_est = st.text_area("Notas Estética / Limpieza")
 
         st.markdown('<div class="section-header">Finalización</div>', unsafe_allow_html=True)
         obs_gen = st.text_area("COMENTARIOS GENERALES *")
         fotos_u = st.file_uploader("Evidencia (Opcional)", accept_multiple_files=True)
 
-        submit = st.form_submit_button("✅ GUARDAR REPORTE")
+        submit = st.form_submit_button("✅ GUARDAR REPORTE COMPLETO")
 
     if submit:
         if not tec:
@@ -100,27 +108,24 @@ if menu == "📋 SUPERVISOR":
                 payload = {
                     "action": "insertar", "tecnico": tec, "ubicacion": ubi,
                     "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
-                    "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_it,
-                    "energia": energia, "iluminacion": ilumina, "branding": branding, "l_int": limpieza,
+                    "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina, "obs_int": obs_int,
+                    "leds_s": leds, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_it,
+                    "branding": branding, "l_int": l_int, "l_ext": l_ext, "obs_mod": obs_est,
                     "obs_gen": obs_gen, "fotos": ";".join(links)
                 }
                 try:
-                    r = requests.post(URL_BRIDGE, json=payload, timeout=30)
-                    st.success("✅ ¡Reporte enviado correctamente!")
-                    st.balloons()
-                except: st.error("❌ Error al enviar datos.")
+                    requests.post(URL_BRIDGE, json=payload, timeout=30)
+                    st.success("✅ Reporte enviado correctamente.")
+                except: st.error("❌ Error al enviar.")
 
-# --- MÓDULO REPORTES ---
+# --- MÓDULO 2: REPORTES (MÁXIMA INFORMACIÓN) ---
 else:
-    st.subheader("📊 Historial de Reportes")
+    st.subheader("📊 Consulta de Historial")
     try:
-        # Petición directa sin validaciones HTML que causan el error
         response = requests.get(URL_BRIDGE, timeout=30)
         data_json = response.json()
-        
         if len(data_json) > 1:
             df = pd.DataFrame(data_json[1:], columns=data_json[0])
-            # Filtrar solo por nombres oficiales
             df = df[df['Ubicación'].isin(KIOSCOS_OFICIALES)]
             
             c1, c2 = st.columns(2)
@@ -129,29 +134,17 @@ else:
             
             rep = df[(df['Ubicación'] == k_sel) & (df['Fecha'] == f_sel)].iloc[0]
             
-            st.markdown('<div class="report-box">', unsafe_allow_html=True)
+            # --- PANEL DE REPORTE ---
+            st.markdown('<div class="report-card">', unsafe_allow_html=True)
             st.write(f"### 📍 {k_sel}")
             st.write(f"👷 **Responsable:** {rep.get('Técnico')} | 📅 **Fecha:** {f_sel}")
             
-            st.markdown('<div class="section-header">Sistemas Digitales</div>', unsafe_allow_html=True)
-            i1, i2, i3, i4 = st.columns(4)
-            i1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
-            i2.metric("Totem Der", rep.get('Totem Derecho', 'N/A'))
-            i3.metric("TV Izq", rep.get('TV Izquierdo', 'N/A'))
-            i4.metric("TV Der", rep.get('TV Derecha', 'N/A'))
-
-            st.markdown('<div class="section-header">Infraestructura</div>', unsafe_allow_html=True)
-            st.write(f"**Estructura:** P.Izq: {rep.get('Piloto Izquierdo')} | C.Der: {rep.get('Copiloto Derecho')} | Del: {rep.get('Delantera')} | Post: {rep.get('Posterior')}")
-            st.markdown(f"**Notas:** <div class='text-wrap'>{rep.get('Obs Puertas', 'Sin notas')}</div>", unsafe_allow_html=True)
-            
-            st.markdown('<div class="section-header">Conclusiones del Supervisor</div>', unsafe_allow_html=True)
-            st.markdown(f"<div class='text-wrap'>{rep.get('Obs Generales', 'N/A')}</div>", unsafe_allow_html=True)
-            
-            if rep.get('Fotos'):
-                st.image(str(rep['Fotos']).split(";"), use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.info("Aún no hay reportes para los kioscos oficiales.")
-    except Exception as e:
-        st.error("Sincronizando con la base de datos...")
-        st.info("Si el error persiste, asegúrate de que el Script de Google esté publicado como 'Anyone'.")
+            # FILA IT
+            st.markdown('<div class="section-header">🖥️ SISTEMAS IT & PANTALLAS</div>', unsafe_allow_html=True)
+            it1, it2, it3, it4, it5 = st.columns(5)
+            it1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
+            it2.metric("Totem Der", rep.get('Totem Derecho', 'N/A'))
+            it3.metric("TV Izq", rep.get('TV Izquierdo', 'N/A'))
+            it4.metric("TV Der", rep.get('TV Derecha', 'N/A'))
+            it5.metric("LEDS", rep.get('Leds Superiores', 'N/A'))
+            st.markdown(f"**Notas IT:** <div class='text
