@@ -9,26 +9,35 @@ IMGBB_API_KEY = "375f94b0781e8b8b0d2ffa0132d8edca"
 
 st.set_page_config(page_title="Kioscos IA - Gestión Integral", layout="wide")
 
-# Estilo Visual
+# Estilo Visual Kioscos IA
 st.markdown("""
     <style>
     .stApp { background-color: #020617; color: #f8fafc; }
     .main-nav { background-color: #0f172a; padding: 20px; border-radius: 15px; border: 1px solid #00d4ff; margin-bottom: 30px; text-align: center; }
     .report-box { background-color: #0f172a; padding: 25px; border-radius: 15px; border-left: 5px solid #00d4ff; border: 1px solid #1e293b; margin-bottom: 20px; }
     .section-header { color: #00d4ff; font-weight: bold; border-bottom: 1px solid #1e293b; margin-top: 15px; margin-bottom: 10px; font-size: 1.2rem; }
+    .metric-label { color: #94a3b8; font-size: 0.9rem; }
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-nav"><h1>🚀 SISTEMA KIOSCOS IA</h1></div>', unsafe_allow_html=True)
 menu = st.sidebar.radio("MÓDULO SELECCIONADO", ["SUPERVISOR (Ingreso)", "REPORTES (Consulta)"])
 
-# --- MÓDULO 1: SUPERVISOR (TODO EL FORMULARIO) ---
+# LISTA MAESTRA DE KIOSCOS (Actualizada)
+LISTA_KIOSCOS = [
+    "LA PUNTA", "SALAVERRY REAL PLAZA", "JESUS MARIA", "MAGDALENA", 
+    "PERSHING - DOMINGO ORUE", "ARENALES - DOMINGO CUETO", 
+    "VIVANDA JAVIER PRADO", "PASTIPAN JAVIER PRADO", 
+    "U: RICARDO PALMA", "CHACARILLA", "CHORRILLOS BASE", "TECSUP LIMA"
+]
+
+# --- MÓDULO 1: SUPERVISOR ---
 if menu == "SUPERVISOR (Ingreso)":
     st.header("📝 Registro Completo de Inspección")
     with st.form("form_sup_completo", clear_on_submit=True):
         c1, c2 = st.columns(2)
         tec = c1.text_input("Técnico Responsable *")
-        ubi = c2.selectbox("Seleccione Kiosco *", ["LA PUNTA", "SALAVERRY", "JESUS MARIA", "MAGDALENA", "SURCO", "CHACARILLA"])
+        ubi = c2.selectbox("Seleccione Kiosco *", LISTA_KIOSCOS)
         
         # 1. ESTRUCTURA
         st.markdown('<div class="section-header">🏗️ ESTRUCTURA Y PUERTAS</div>', unsafe_allow_html=True)
@@ -37,7 +46,7 @@ if menu == "SUPERVISOR (Ingreso)":
         c_der = col_p[1].radio("Copiloto Der", ["Perfecto", "Falla"])
         p_del = col_p[2].radio("Delantera", ["Perfecto", "Falla"])
         p_pos = col_p[3].radio("Posterior", ["Perfecto", "Falla"])
-        obs_p = st.text_area("Notas de Puertas", key="t_p")
+        obs_p = st.text_area("Notas de Puertas", placeholder="Detalles de bisagras, cerraduras...")
 
         # 2. INTERIORES Y ENERGÍA
         st.markdown('<div class="section-header">🏠 INTERIORES Y ENERGÍA</div>', unsafe_allow_html=True)
@@ -46,7 +55,7 @@ if menu == "SUPERVISOR (Ingreso)":
         cableado = col_i[1].radio("Cableado", ["OK", "Falla"])
         energia = col_i[2].radio("Energía", ["OK", "Falla"])
         ilumina = col_i[3].radio("Iluminación", ["OK", "Falla"])
-        obs_int = st.text_area("Notas Interiores", key="t_i")
+        obs_int = st.text_area("Notas Interiores", placeholder="Estado de estantes, tomacorrientes...")
 
         # 3. IT PANTALLAS
         st.markdown('<div class="section-header">🖥️ SISTEMAS IT</div>', unsafe_allow_html=True)
@@ -54,7 +63,7 @@ if menu == "SUPERVISOR (Ingreso)":
         t_izq = col_it[0].radio("Totem Izq", ["OK", "Falla"])
         t_der = col_it[1].radio("Totem Der", ["OK", "Falla"])
         tv_izq = col_it[2].radio("TV Principal", ["OK", "Falla"])
-        obs_pan = st.text_area("Notas IT / Pantallas", key="t_it")
+        obs_pan = st.text_area("Notas IT / Pantallas", placeholder="Conectividad, brillo, errores de sistema...")
 
         # 4. LIMPIEZA Y BRANDING
         st.markdown('<div class="section-header">✨ LIMPIEZA Y BRANDING</div>', unsafe_allow_html=True)
@@ -62,7 +71,7 @@ if menu == "SUPERVISOR (Ingreso)":
         branding = col_l[0].radio("Branding", ["Perfecto", "Dañado"])
         l_int = col_l[1].radio("Limp. Interna", ["Limpio", "Sucio"])
         l_ext = col_l[2].radio("Limp. Externa", ["Limpio", "Sucio"])
-        obs_mod = st.text_area("Notas de Branding/Limpieza", key="t_mod")
+        obs_mod = st.text_area("Notas de Branding/Limpieza")
 
         st.subheader("📸 Evidencia y Finalización")
         obs_gen = st.text_area("Comentarios Finales del Supervisor *")
@@ -93,43 +102,66 @@ if menu == "SUPERVISOR (Ingreso)":
                     try:
                         requests.post(URL_BRIDGE, json=payload, timeout=30)
                         st.success("¡Reporte guardado exitosamente!")
-                        st.balloons()
-                    except: st.error("Error de tiempo: El Excel tardó demasiado en responder.")
+                    except: st.error("Error de tiempo al guardar.")
 
-# --- MÓDULO 2: REPORTES (MÁS TIEMPO DE ESPERA) ---
+# --- MÓDULO 2: REPORTES ---
 else:
-    st.header("📊 Historial de Reportes")
+    st.header("📊 Historial de Reportes Completo")
     try:
-        # Aumentamos el timeout a 30 segundos para evitar el error de conexión
-        r = requests.get(URL_BRIDGE, timeout=30)
+        r = requests.get(URL_BRIDGE, timeout=35)
         data = r.json()
         if len(data) > 1:
             df = pd.DataFrame(data[1:], columns=data[0])
             f1, f2 = st.columns(2)
-            sel_k = f1.selectbox("Filtrar por Kiosco", df['Ubicación'].unique())
+            sel_k = f1.selectbox("Kiosco:", df['Ubicación'].unique())
             df_k = df[df['Ubicación'] == sel_k]
-            sel_f = f2.selectbox("Seleccionar Fecha", df_k['Fecha'].unique())
+            sel_f = f2.selectbox("Fecha:", df_k['Fecha'].unique())
             
             rep = df_k[df_k['Fecha'] == sel_f].iloc[0]
             
             st.markdown('<div class="report-box">', unsafe_allow_html=True)
-            st.subheader(f"📍 REPORTE: {sel_k}")
+            st.subheader(f"📍 DETALLE TÉCNICO: {sel_k}")
             st.write(f"**Técnico:** {rep['Técnico']} | **Fecha:** {sel_f}")
             
-            # Resumen Visual
-            st.markdown('<div class="section-header">⚙️ ESTRUCTURA Y SISTEMAS</div>', unsafe_allow_html=True)
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Energía", rep.get('Energía', 'N/A'))
-            c2.metric("Iluminación", rep.get('Iluminación', 'N/A'))
-            c3.metric("TV Principal", rep.get('TV Izquierdo', 'N/A'))
+            # --- FILA 1: ESTRUCTURA ---
+            st.markdown('<div class="section-header">🏗️ ESTRUCTURA Y ACCESOS</div>', unsafe_allow_html=True)
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Piloto Izq", rep.get('Piloto Izquierdo', 'N/A'))
+            c2.metric("Copiloto Der", rep.get('Copiloto Derecho', 'N/A'))
+            c3.metric("Delantera", rep.get('Delantera', 'N/A'))
+            c4.metric("Posterior", rep.get('Posterior', 'N/A'))
+            st.caption(f"**Notas Puertas:** {rep.get('Obs Puertas', 'N/A')}")
 
-            st.markdown('<div class="section-header">📝 OBSERVACIONES GENERALES</div>', unsafe_allow_html=True)
-            st.info(rep['Obs Generales'])
+            # --- FILA 2: INTERIORES ---
+            st.markdown('<div class="section-header">🏠 INTERIORES Y ENERGÍA</div>', unsafe_allow_html=True)
+            i1, i2, i3, i4 = st.columns(4)
+            i1.metric("Muebles", rep.get('Muebles', 'N/A'))
+            i2.metric("Cableado", rep.get('Cableado', 'N/A'))
+            i3.metric("Energía", rep.get('Energía', 'N/A'))
+            i4.metric("Iluminación", rep.get('Iluminación', 'N/A'))
+            st.caption(f"**Notas Interiores:** {rep.get('Obs Interiores', 'N/A')}")
+
+            # --- FILA 3: TECNOLOGÍA ---
+            st.markdown('<div class="section-header">🖥️ SISTEMAS IT</div>', unsafe_allow_html=True)
+            it1, it2, it3 = st.columns(3)
+            it1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
+            it2.metric("Totem Der", rep.get('Totem Derecho', 'N/A'))
+            it3.metric("TV Principal", rep.get('TV Izquierdo', 'N/A'))
+            st.caption(f"**Notas Pantallas:** {rep.get('Obs Pantallas', 'N/A')}")
+
+            # --- FILA 4: ESTÉTICA ---
+            st.markdown('<div class="section-header">✨ LIMPIEZA Y BRANDING</div>', unsafe_allow_html=True)
+            b1, b2, b3 = st.columns(3)
+            b1.metric("Branding", rep.get('Branding', 'N/A'))
+            b2.metric("L. Interna", rep.get('Limp Interna', 'N/A'))
+            b3.metric("L. Externa", rep.get('Limp Externa', 'N/A'))
+
+            st.markdown('<div class="section-header">📝 OBSERVACIONES FINALES</div>', unsafe_allow_html=True)
+            st.info(rep.get('Obs Generales', 'Sin observaciones adicionales.'))
             
-            if rep['Fotos']:
-                st.markdown('<div class="section-header">📸 EVIDENCIA VISUAL</div>', unsafe_allow_html=True)
+            if rep.get('Fotos'):
+                st.markdown('<div class="section-header">📸 GALERÍA DE EVIDENCIA</div>', unsafe_allow_html=True)
                 st.image(str(rep['Fotos']).split(";"), use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
-        else: st.warning("Sin datos en el Excel.")
-    except Exception as e:
-        st.error(f"Error de conexión: {e}. Intenta sincronizar de nuevo.")
+        else: st.warning("Esperando datos...")
+    except Exception as e: st.error(f"Error: {e}")
