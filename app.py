@@ -9,11 +9,11 @@ IMGBB_API_KEY = "375f94b0781e8b8b0d2ffa0132d8edca"
 
 st.set_page_config(page_title="Kioscos IA - Operaciones", layout="wide")
 
+# Estilo
 st.markdown("""
     <style>
     .stApp { background-color: #020617; color: #f8fafc; }
     .section-card { background: #0f172a; padding: 20px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 20px; }
-    .stTabs [aria-selected="true"] { background-color: #00d4ff !important; color: black !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -27,7 +27,7 @@ with tab1:
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("1. Información General")
         c1, c2 = st.columns(2)
-        tecnico = c1.text_input("Nombre del Técnico *")
+        tecnico = c1.text_input("Nombre del Técnico *", key="input_tec")
         ubicacion = c2.selectbox("Ubicación del Módulo *", [
             "LA PUNTA", "SALAVERRY REAL PLAZA", "PERSHING - DOMINGO ORUE", 
             "ARENALES - DOMINGO CUETO", "VIVANDA JAVIER PRADO", 
@@ -43,7 +43,7 @@ with tab1:
         c_der = cp2.radio("Copiloto Derecho", ["Perfecto", "Falla"])
         p_del = cp3.radio("Delantera", ["Perfecto", "Falla"])
         p_pos = cp4.radio("Posterior", ["Perfecto", "Falla"])
-        obs_p = st.text_input("Observaciones de Puertas (Escribir aquí)")
+        obs_p = st.text_area("Observaciones de Puertas", placeholder="Escriba aquí los detalles de las puertas...", key="area_p")
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 3. INTERIORES
@@ -54,7 +54,7 @@ with tab1:
         cableado = ci2.radio("Cableado", ["OK", "Falla"])
         energia = ci3.radio("Energía", ["OK", "Falla"])
         ilumina = ci4.radio("Iluminación", ["OK", "Falla"])
-        obs_int = st.text_input("Observaciones de Interiores (Escribir aquí)")
+        obs_int = st.text_area("Observaciones de Interiores", placeholder="Escriba aquí los detalles del interior...", key="area_int")
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 4. PANTALLAS
@@ -64,7 +64,7 @@ with tab1:
         t_izq = it1.radio("Tótem Izquierdo", ["OK", "Falla"])
         t_der = it2.radio("Tótem Derecho", ["OK", "Falla"])
         tv_izq = it3.radio("TV principal", ["OK", "Falla"])
-        obs_pan = st.text_input("Observaciones de Pantallas (Escribir aquí)")
+        obs_pan = st.text_area("Observaciones de Pantallas", placeholder="Escriba aquí detalles de pantallas...", key="area_pan")
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 5. OTROS
@@ -74,21 +74,21 @@ with tab1:
         internet = o1.radio("Internet", ["OK", "Falla"])
         wifi = o2.radio("Wifi Gratuito", ["OK", "Falla"])
         boton = o3.radio("Botón de Pánico", ["OK", "Falla"])
-        obs_otros = st.text_input("Otras observaciones técnicas (Escribir aquí)")
+        obs_otros = st.text_area("Otras observaciones técnicas", placeholder="Escriba aquí otros detalles...", key="area_otros")
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 6. FINAL
-        st.subheader("Evidencia Fotografica")
-        obs_gen = st.text_area("Comentarios Finales del Supervisor *")
+        st.subheader("Evidencia Fotográfica")
+        obs_gen = st.text_area("Comentarios Finales del Supervisor *", key="area_gen")
         uploaded_images = st.file_uploader("Subir Fotos", accept_multiple_files=True)
 
         submit = st.form_submit_button("ENVIAR REPORTE AL EXCEL")
 
     if submit:
-        if not tecnico or not uploaded_images:
-            st.warning("⚠️ El nombre y las fotos son obligatorios.")
+        if not tecnico or not obs_gen or not uploaded_images:
+            st.warning("⚠️ Nombre, fotos y comentarios generales son obligatorios.")
         else:
-            with st.spinner("Procesando reporte..."):
+            with st.spinner("Enviando reporte completo..."):
                 links = []
                 for img in uploaded_images[:10]:
                     try:
@@ -120,24 +120,34 @@ with tab2:
         try:
             r = requests.get(URL_BRIDGE)
             data = r.json()
-            if len(data) > 1:
-                # Usamos los encabezados de la fila 0
+            if data and len(data) > 1:
                 df = pd.DataFrame(data[1:], columns=data[0])
                 
-                # Para evitar el error de tildes, buscamos la columna dinámicamente
-                col_ubi = [c for c in df.columns if 'Ubicación' in c or 'Ubicacion' in c][0]
-                col_fec = [c for c in df.columns if 'Fecha' in c][0]
-                col_tec = [c for c in df.columns if 'Técnico' in c or 'Tecnico' in c][0]
-                col_obs = [c for c in df.columns if 'Generales' in c][0]
-                col_fot = [c for c in df.columns if 'Fotos' in c][0]
+                # Mapeo seguro de columnas para evitar el IndexError
+                def get_col(name_list):
+                    for name in name_list:
+                        for col in df.columns:
+                            if name.lower() in col.lower():
+                                return col
+                    return None
 
-                for idx, row in df.iterrows():
-                    with st.expander(f"📍 {row[col_ubi]} - {row[col_fec]}"):
-                        st.write(f"**Técnico:** {row[col_tec]}")
-                        st.write(f"**Notas:** {row[col_obs]}")
-                        if row[col_fot]:
-                            st.image(str(row[col_fot]).split(";"), width=200)
+                c_ubi = get_col(['Ubicación', 'Ubicacion'])
+                c_fec = get_col(['Fecha'])
+                c_tec = get_col(['Técnico', 'Tecnico'])
+                c_obs = get_col(['Generales', 'Comentarios'])
+                c_fot = get_col(['Fotos'])
+
+                if c_ubi and c_fec:
+                    for idx, row in df.iterrows():
+                        with st.expander(f"📍 {row[c_ubi]} - {row[c_fec]}"):
+                            if c_tec: st.write(f"**Técnico:** {row[c_tec]}")
+                            if c_obs: st.write(f"**Notas:** {row[c_obs]}")
+                            if c_fot and row[c_fot]:
+                                imgs = str(row[c_fot]).split(";")
+                                st.image(imgs, width=200)
+                else:
+                    st.error("No se encontraron las columnas básicas en el Excel.")
             else:
-                st.info("No hay datos registrados aún.")
+                st.info("No hay datos suficientes en la hoja de cálculo.")
         except Exception as e:
-            st.error(f"Error al leer el Dashboard: {e}")
+            st.error(f"Error al cargar el Dashboard: {e}")
