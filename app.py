@@ -13,32 +13,91 @@ KIOSCOS_OFICIALES = [
     "PASTIPAN JAVIER PRADO", "UNIVERSIDAD RICARDO PALMA", "SURCO WONG"
 ]
 
-st.set_page_config(page_title="Kioscos IA - Gestión Central", layout="wide")
+st.set_page_config(page_title="Kioscos IA - Dashboard", layout="wide", page_icon="🚀")
 
-# Estilo
+# --- DISEÑO UI AVANZADO (CSS) ---
 st.markdown("""
     <style>
+    /* Fondo y Base */
     .stApp { background-color: #020617; color: #f8fafc; }
-    .main-nav { background-color: #0f172a; padding: 20px; border-radius: 15px; border: 1px solid #00d4ff; margin-bottom: 30px; text-align: center; }
-    .report-box { background-color: #0f172a; padding: 25px; border-radius: 15px; border-left: 5px solid #00d4ff; border: 1px solid #1e293b; margin-bottom: 20px; }
-    .section-header { color: #00d4ff; font-weight: bold; border-bottom: 1px solid #1e293b; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem; text-transform: uppercase; }
-    .text-wrap { white-space: pre-wrap; font-family: sans-serif; background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; color: #cbd5e1; }
+    
+    /* Encabezado Principal */
+    .main-header {
+        background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        border: 1px solid #00d4ff;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: 0 10px 15px -3px rgba(0, 212, 255, 0.2);
+    }
+    
+    /* Secciones / Tarjetas */
+    .stForm, .report-box {
+        background-color: #0f172a !important;
+        padding: 30px !important;
+        border-radius: 15px !important;
+        border: 1px solid #1e293b !important;
+        margin-bottom: 25px !important;
+    }
+    
+    /* Encabezados de Sección */
+    .section-header {
+        color: #00d4ff;
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-left: 4px solid #00d4ff;
+        padding-left: 15px;
+        margin-bottom: 20px;
+        margin-top: 10px;
+    }
+    
+    /* Caja de texto de Observaciones */
+    .text-wrap {
+        white-space: pre-wrap;
+        background: #1e293b;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #334155;
+        color: #e2e8f0;
+        line-height: 1.6;
+    }
+    
+    /* Botón de Envío */
+    div.stButton > button:first-child {
+        background: linear-gradient(90deg, #00d4ff 0%, #0080ff 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-weight: bold;
+        border-radius: 10px;
+        width: 100%;
+        transition: 0.3s;
+    }
+    div.stButton > button:hover {
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+        transform: scale(1.02);
+    }
+    
+    /* Estilo de métricas */
+    [data-testid="stMetricValue"] { color: #00d4ff !important; font-size: 1.8rem !important; }
+    [data-testid="stMetricLabel"] { color: #94a3b8 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-nav"><h1>🚀 SISTEMA INTEGRAL KIOSCOS IA</h1></div>', unsafe_allow_html=True)
-menu = st.sidebar.radio("MÓDULO SELECCIONADO", ["SUPERVISOR (Ingreso)", "REPORTES (Consulta)"])
+st.markdown('<div class="main-header"><h1>🛸 KIOSCOS IA · CONTROL PANEL</h1><p style="color:#94a3b8;">Gestión Técnica de Infraestructura Digital</p></div>', unsafe_allow_html=True)
+menu = st.sidebar.radio("MODO DE OPERACIÓN", ["📋 SUPERVISOR (Ingreso)", "📊 REPORTES (Historial)"])
 
 # --- MÓDULO 1: SUPERVISOR ---
-if menu == "SUPERVISOR (Ingreso)":
-    st.header("📝 Registro de Inspección")
+if menu == "📋 SUPERVISOR (Ingreso)":
+    st.subheader("📝 Nuevo Registro de Inspección")
     
-    # Usamos st.container para que los datos no se borren al validar
-    with st.form("form_sup_final"):
+    with st.form("form_visual"):
         c1, c2 = st.columns(2)
-        # Marcado como obligatorio visualmente
-        tec = c1.text_input("Técnico Responsable (CAMPO OBLIGATORIO) *", placeholder="Escriba su nombre completo")
-        ubi = c2.selectbox("Seleccione Kiosco Oficial *", KIOSCOS_OFICIALES)
+        tec = c1.text_input("👤 Técnico Responsable (Obligatorio) *", placeholder="Nombre completo")
+        ubi = c2.selectbox("📍 Kiosco Seleccionado", KIOSCOS_OFICIALES)
         
         st.markdown('<div class="section-header">🏗️ Estructura y Puertas</div>', unsafe_allow_html=True)
         cp1, cp2, cp3, cp4 = st.columns(4)
@@ -46,149 +105,101 @@ if menu == "SUPERVISOR (Ingreso)":
         c_der = cp2.radio("Copiloto Der", ["Perfecto", "Falla"])
         p_del = cp3.radio("Delantera", ["Perfecto", "Falla"])
         p_pos = cp4.radio("Posterior", ["Perfecto", "Falla"])
-        obs_p = st.text_area("Observaciones Puertas")
+        obs_p = st.text_area("Notas sobre accesos", height=100)
 
-        st.markdown('<div class="section-header">🏠 Interiores y Energía</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🖥️ Sistemas Digitales & IT</div>', unsafe_allow_html=True)
+        it1, it2, it3, it4 = st.columns(4)
+        t_izq = it1.radio("Totem Izq", ["OK", "Falla"])
+        t_der = it2.radio("Totem Der", ["OK", "Falla"])
+        tv_izq = it3.radio("TV Izquierda", ["OK", "Falla"])
+        tv_der = it4.radio("TV Derecha", ["OK", "Falla"])
+        obs_pan = st.text_area("Notas técnicas IT", height=100)
+
+        st.markdown('<div class="section-header">⚡ Energía e Interiores</div>', unsafe_allow_html=True)
         ci1, ci2, ci3, ci4 = st.columns(4)
         muebles = ci1.radio("Muebles", ["OK", "Falla"])
         cableado = ci2.radio("Cableado", ["OK", "Falla"])
         energia = ci3.radio("Energía", ["OK", "Falla"])
         ilumina = ci4.radio("Iluminación", ["OK", "Falla"])
-        obs_int = st.text_area("Observaciones Interiores")
-
-        st.markdown('<div class="section-header">🖥️ Sistemas IT y Pantallas</div>', unsafe_allow_html=True)
-        it_c1, it_c2, it_c3, it_c4 = st.columns(4)
-        t_izq = it_c1.radio("Totem Izq", ["OK", "Falla"])
-        t_der = it_c2.radio("Totem Der", ["OK", "Falla"])
-        tv_izq = it_c3.radio("TV Izquierda", ["OK", "Falla"])
-        tv_der = it_c4.radio("TV Derecha", ["OK", "Falla"])
-        leds_s = st.radio("LEDs Superiores", ["OK", "Falla"], horizontal=True)
-        obs_pan = st.text_area("Observaciones IT")
-
-        st.markdown('<div class="section-header">🌐 Conectividad y Seguridad</div>', unsafe_allow_html=True)
-        co1, co2, co3, co4 = st.columns(4)
-        internet = co1.radio("Internet", ["OK", "Falla"])
-        wifi = co2.radio("Wifi Gratuito", ["OK", "Falla"])
-        camaras = co3.radio("Cámaras", ["OK", "Falla"])
-        boton = co4.radio("Botón Pánico", ["OK", "Falla"])
-
+        
         st.markdown('<div class="section-header">✨ Branding y Limpieza</div>', unsafe_allow_html=True)
         cl1, cl2, cl3 = st.columns(3)
         branding = cl1.radio("Branding", ["OK", "Dañado"])
-        l_int = cl2.radio("Limpieza Int.", ["OK", "Sucio"])
-        l_ext = cl3.radio("Limpieza Ext.", ["OK", "Sucio"])
-        obs_mod = st.text_area("Observaciones Módulo / Limpieza")
+        l_int = cl2.radio("Limpieza Int.", ["Limpio", "Sucio"])
+        l_ext = cl3.radio("Limpieza Ext.", ["Limpio", "Sucio"])
 
-        st.subheader("📸 Evidencia (Opcional)")
-        obs_gen = st.text_area("Comentarios Supervisor *")
-        fotos_u = st.file_uploader("Fotos (Opcional si todo está OK)", accept_multiple_files=True)
+        st.markdown('<div class="section-header">📸 Evidencia y Conclusión</div>', unsafe_allow_html=True)
+        obs_gen = st.text_area("Comentarios Finales de Supervisión *", height=150)
+        fotos_u = st.file_uploader("Adjuntar fotos (Opcional)", accept_multiple_files=True)
 
-        submit = st.form_submit_button("✅ ENVIAR REPORTE COMPLETO")
+        submit = st.form_submit_button("🚀 SINCRONIZAR REPORTE")
 
-    # Lógica de procesamiento fuera del formulario para persistencia
     if submit:
         if not tec:
-            st.error("❌ ERROR: El nombre del técnico es obligatorio. Por favor rellénelo antes de enviar.")
+            st.error("⚠️ Debes ingresar el nombre del técnico para validar el reporte.")
         else:
-            with st.spinner("Sincronizando con Excel..."):
+            with st.spinner("🚀 Subiendo datos a la nube..."):
                 links = []
                 if fotos_u:
                     for img in fotos_u[:10]:
                         try:
-                            r_img = requests.post("https://api.imgbb.com/1/upload", data={"key": IMGBB_API_KEY, "image": base64.b64encode(img.read()).decode('utf-8')})
-                            if r_img.status_code == 200:
-                                links.append(r_img.json()['data']['url'])
-                        except:
-                            pass
+                            b64 = base64.b64encode(img.read()).decode('utf-8')
+                            r = requests.post("https://api.imgbb.com/1/upload", data={"key": IMGBB_API_KEY, "image": b64})
+                            if r.status_code == 200: links.append(r.json()['data']['url'])
+                        except: pass
                 
                 payload = {
-                    "action": "insertar",
-                    "tecnico": tec, "ubicacion": ubi,
+                    "action": "insertar", "tecnico": tec, "ubicacion": ubi,
                     "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
-                    "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina, "obs_int": obs_int,
-                    "leds_s": leds_s, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_pan,
-                    "internet": internet, "wifi": wifi, "lockers": "OK", "camaras": camaras, "boton": boton,
-                    "branding": branding, "l_int": l_int, "l_ext": l_ext, "obs_mod": obs_mod,
-                    "obs_gen": obs_gen, "fotos": ";".join(links)
+                    "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina, "obs_int": "N/A",
+                    "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_pan,
+                    "branding": branding, "l_int": l_int, "l_ext": l_ext, "obs_gen": obs_gen, "fotos": ";".join(links)
                 }
-                
-                try:
-                    r_final = requests.post(URL_BRIDGE, json=payload, timeout=35)
-                    if r_final.status_code == 200:
-                        st.success("¡Reporte Guardado con éxito!")
-                        st.balloons()
-                except:
-                    st.error("Error de conexión con el Excel.")
+                requests.post(URL_BRIDGE, json=payload, timeout=35)
+                st.success("✅ ¡Reporte almacenado correctamente!")
+                st.balloons()
 
 # --- MÓDULO 2: REPORTES ---
 else:
-    st.header("📊 Consulta de Reportes")
+    st.subheader("📊 Historial de Inspecciones")
     try:
         r = requests.get(URL_BRIDGE, timeout=40)
         data = r.json()
         if len(data) > 1:
             df = pd.DataFrame(data[1:], columns=data[0])
-            df_limpio = df[df['Ubicación'].isin(KIOSCOS_OFICIALES)]
+            df = df[df['Ubicación'].isin(KIOSCOS_OFICIALES)]
             
-            c1, c2 = st.columns(2)
-            sel_k = c1.selectbox("Kiosco:", df_limpio['Ubicación'].unique())
-            df_k = df_limpio[df_limpio['Ubicación'] == sel_k]
-            sel_f = c2.selectbox("Fecha:", df_k['Fecha'].unique())
+            sc1, sc2 = st.columns(2)
+            k_sel = sc1.selectbox("Filtrar Kiosco", df['Ubicación'].unique())
+            f_sel = sc2.selectbox("Seleccionar Fecha", df[df['Ubicación']==k_sel]['Fecha'].unique())
             
-            rep = df_k[df_k['Fecha'] == sel_f].iloc[0]
+            rep = df[(df['Ubicación']==k_sel) & (df['Fecha']==f_sel)].iloc[0]
             
             st.markdown('<div class="report-box">', unsafe_allow_html=True)
-            st.subheader(f"📍 REPORTE TÉCNICO: {sel_k}")
-            st.write(f"**Técnico:** {rep.get('Técnico', 'N/A')} | **Fecha:** {sel_f}")
+            st.markdown(f"<h2>📍 {k_sel}</h2>", unsafe_allow_html=True)
+            st.write(f"👷 **Técnico:** {rep.get('Técnico')} | 📅 **Fecha:** {f_sel}")
             
-            # --- Secciones del Reporte ---
-            # ESTRUCTURA
-            st.markdown('<div class="section-header">⚙️ ESTRUCTURA Y ACCESOS</div>', unsafe_allow_html=True)
-            r1, r2, r3, r4 = st.columns(4)
-            r1.metric("Piloto Izq", rep.get('Piloto Izquierdo', 'N/A'))
-            r2.metric("Copiloto Der", rep.get('Copiloto Derecho', 'N/A'))
-            r3.metric("Delantera", rep.get('Delantera', 'N/A'))
-            r4.metric("Posterior", rep.get('Posterior', 'N/A'))
-            st.markdown(f"**Notas:**<div class='text-wrap'>{rep.get('Obs Puertas', 'N/A')}</div>", unsafe_allow_html=True)
-
-            # INTERIORES
-            st.markdown('<div class="section-header">🏠 INTERIORES Y ENERGÍA</div>', unsafe_allow_html=True)
+            # Layout de Reporte
+            st.markdown('<div class="section-header">⚙️ Estado Estructural</div>', unsafe_allow_html=True)
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Piloto Izq", rep.get('Piloto Izquierdo'))
+            m2.metric("Copiloto Der", rep.get('Copiloto Derecho'))
+            m3.metric("Delantera", rep.get('Delantera'))
+            m4.metric("Posterior", rep.get('Posterior'))
+            
+            st.markdown('<div class="section-header">🖥️ Equipamiento IT</div>', unsafe_allow_html=True)
             i1, i2, i3, i4 = st.columns(4)
-            i1.metric("Muebles", rep.get('Muebles', 'N/A'))
-            i2.metric("Cableado", rep.get('Cableado', 'N/A'))
-            i3.metric("Energía", rep.get('Energía', 'N/A'))
-            i4.metric("Luz", rep.get('Iluminación', 'N/A'))
-            st.markdown(f"**Notas:**<div class='text-wrap'>{rep.get('Obs Interiores', 'N/A')}</div>", unsafe_allow_html=True)
+            i1.metric("Totem Izq", rep.get('Totem Izquierdo'))
+            i2.metric("Totem Der", rep.get('Totem Derecho'))
+            i3.metric("TV Izq", rep.get('TV Izquierdo'))
+            i4.metric("TV Der", rep.get('TV Derecha'))
 
-            # IT
-            st.markdown('<div class="section-header">🖥️ SISTEMAS IT</div>', unsafe_allow_html=True)
-            it1, it2, it3, it4 = st.columns(4)
-            it1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
-            it2.metric("Totem Der", rep.get('Totem Derecho', 'N/A'))
-            it3.metric("TV Izq", rep.get('TV Izquierdo', 'N/A'))
-            it4.metric("TV Der", rep.get('TV Derecha', 'N/A'))
-            st.write(f"**LEDs:** {rep.get('Leds Superiores', 'N/A')}")
-            st.markdown(f"**Notas:**<div class='text-wrap'>{rep.get('Obs Pantallas', 'N/A')}</div>", unsafe_allow_html=True)
-
-            # OTROS
-            st.markdown('<div class="section-header">🌐 CONECTIVIDAD / SEGURIDAD</div>', unsafe_allow_html=True)
-            o1, o2, o3, o4 = st.columns(4)
-            o1.metric("Net", rep.get('Internet', 'N/A'))
-            o2.metric("Wifi", rep.get('Wifi', 'N/A'))
-            o3.metric("Cam", rep.get('Cámaras Seguridad', 'N/A'))
-            o4.metric("Boton", rep.get('Boton Panico', 'N/A'))
-
-            # ESTÉTICA
-            st.markdown('<div class="section-header">✨ ESTÉTICA</div>', unsafe_allow_html=True)
-            st.write(f"**Branding:** {rep.get('Branding', 'N/A')} | **Limp Int:** {rep.get('Limp Interna', 'N/A')} | **Limp Ext:** {rep.get('Limp Externa', 'N/A')}")
-            st.markdown(f"**Notas:**<div class='text-wrap'>{rep.get('Obs Modulo', 'N/A')}</div>", unsafe_allow_html=True)
-
-            st.markdown('<div class="section-header">📝 CONCLUSIONES</div>', unsafe_allow_html=True)
-            st.markdown(f"<div class='text-wrap'>{rep.get('Obs Generales', 'N/A')}</div>", unsafe_allow_html=True)
+            st.markdown('<div class="section-header">📝 Notas Generales</div>', unsafe_allow_html=True)
+            st.markdown(f"<div class='text-wrap'>{rep.get('Obs Generales')}</div>", unsafe_allow_html=True)
             
             if rep.get('Fotos'):
-                st.markdown('<div class="section-header">📸 EVIDENCIA</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-header">📸 Galería de Evidencia</div>', unsafe_allow_html=True)
                 st.image(str(rep['Fotos']).split(";"), use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"Error: {e}")
+    except:
+        st.error("❌ No se pudo conectar con la base de datos.")
