@@ -8,7 +8,6 @@ COLOR_BLUE_SEA = "#000059"
 COLOR_CIAN = "#66FBFC"
 COLOR_BLACK = "#000000"
 
-# URL de tu Google Apps Script
 URL_BRIDGE = "https://script.google.com/macros/s/AKfycbwZHc5UdHwbx52lgLWL5_LPDEuDjft7_yWbDuR1lDyOZk05h3G4bKfwHjJuHpziNjTS/exec"
 IMGBB_API_KEY = "375f94b0781e8b8b0d2ffa0132d8edca"
 
@@ -44,10 +43,10 @@ st.markdown(f"""
 
 st.markdown(f'<div class="main-header"><h1>KIOSCOS IΛ</h1><p style="color:{COLOR_CIAN}; font-weight:bold;">EL FUTURO EN CADA ESQUINA</p></div>', unsafe_allow_html=True)
 
-menu = st.sidebar.radio("MODALIDAD", ["📋 SUPERVISOR (Ingreso)", "📊 REPORTES (Consulta)"])
+menu = st.sidebar.radio("MODALIDAD", ["📋 SUPERVISOR", "📊 REPORTES"])
 
 # --- MÓDULO 1: SUPERVISOR ---
-if menu == "📋 SUPERVISOR (Ingreso)":
+if menu == "📋 SUPERVISOR":
     st.subheader("📝 Registro Técnico Completo")
     with st.form("form_total", clear_on_submit=False):
         c1, c2 = st.columns(2)
@@ -108,32 +107,56 @@ if menu == "📋 SUPERVISOR (Ingreso)":
                         except: pass
                 
                 payload = {
-                    "action": "insertar",
-                    "tecnico": tec,
-                    "ubicacion": ubi,
-                    "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos,
-                    "obs_p": obs_p,
+                    "action": "insertar", "tecnico": tec, "ubicacion": ubi,
+                    "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
                     "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina,
-                    "obs_int": obs_int,
-                    "p_360": p_360,
-                    "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der,
-                    "obs_pan": obs_it,
+                    "obs_int": obs_int, "p_360": p_360, "t_izq": t_izq, "t_der": t_der,
+                    "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_it,
                     "branding": branding, "l_int": l_int, "l_ext": l_ext, "camaras": camaras,
                     "obs_gen": obs_gen, "fotos": ";".join(links)
                 }
-                
                 try:
                     requests.post(URL_BRIDGE, json=payload, timeout=30)
-                    st.success("✅ Reporte enviado con éxito.")
-                    st.balloons()
-                except: st.error("❌ Error al conectar.")
+                    st.success("✅ ¡Reporte enviado!")
+                except: st.error("❌ Error de envío.")
 
 # --- MÓDULO 2: REPORTES ---
 else:
     st.subheader("📊 Historial de Inspecciones")
     try:
-        response = requests.get(URL_BRIDGE, timeout=30)
+        response = requests.get(URL_BRIDGE, timeout=35)
         data_json = response.json()
         if len(data_json) > 1:
             df = pd.DataFrame(data_json[1:], columns=data_json[0])
-            df = df[df['Ubicación'].isin(KIOSCOS_OF
+            
+            # Filtro corregido (isin cerrado correctamente)
+            df_final = df[df['Ubicación'].isin(KIOSCOS_OFICIALES)]
+            
+            c1, c2 = st.columns(2)
+            k_sel = c1.selectbox("Kiosco", df_final['Ubicación'].unique())
+            f_sel = c2.selectbox("Fecha", df_final[df_final['Ubicación'] == k_sel]['Fecha'].unique())
+            rep = df_final[(df_final['Ubicación'] == k_sel) & (df_final['Fecha'] == f_sel)].iloc[0]
+            
+            st.markdown('<div class="report-card">', unsafe_allow_html=True)
+            st.write(f"### 📍 {k_sel} - {f_sel}")
+            st.write(f"👷 **Técnico:** {rep.get('Técnico')}")
+            
+            st.markdown('<div class="section-header">🖥️ SISTEMAS IT & PANTALLAS</div>', unsafe_allow_html=True)
+            it1, it2, it3, it4, it5 = st.columns(5)
+            it1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
+            it2.metric("Totem Der", rep.get('Totem Derecho', 'N/A'))
+            it3.metric("TV Izq", rep.get('TV Izquierdo', 'N/A'))
+            it4.metric("TV Der", rep.get('TV Derecha', 'N/A'))
+            it5.metric("P-360", rep.get('Pantallas 360', 'N/A'))
+            
+            st.markdown(f"**Notas IT:** <div class='text-wrap'>{rep.get('Obs Pantallas', 'N/A')}</div>", unsafe_allow_html=True)
+
+            st.markdown('<div class="section-header">🏠 INFRAESTRUCTURA Y ENERGÍA</div>', unsafe_allow_html=True)
+            ei1, ei2, ei3, ei4 = st.columns(4)
+            ei1.metric("Muebles", rep.get('Muebles', 'N/A'))
+            ei2.metric("Energía", rep.get('Energía', 'N/A'))
+            ei3.metric("Iluminación", rep.get('Iluminación', 'N/A'))
+            ei4.metric("Cámaras", rep.get('Cámaras Seguridad', 'N/A'))
+            
+            st.write(f"**Puertas:** P.Izq: {rep.get('Piloto Izquierdo')} | C.Der: {rep.get('Copiloto Derecho')} | Del: {rep.get('Delantera')} | Post: {rep.get('Posterior')}")
+            st.markdown(f"**Notas Estructura:** <div class='text-wrap'>{rep.get('Obs Puertas', 'N
