@@ -84,12 +84,12 @@ if menu == "SUPERVISOR (Ingreso)":
                 try:
                     r = requests.post(URL_BRIDGE, json=payload)
                     if r.status_code == 200:
-                        st.success("¡Reporte Guardado con éxito!")
+                        st.success("¡Reporte Guardado!")
                         st.balloons()
                 except Exception as e:
                     st.error(f"Error de conexión: {e}")
 
-# --- MÓDULO 2: REPORTES (Visualización Interactiva) ---
+# --- MÓDULO 2: REPORTES ---
 else:
     st.header("📊 Consulta de Reportes")
     try:
@@ -98,35 +98,25 @@ else:
         if len(data) > 1:
             df = pd.DataFrame(data[1:], columns=data[0])
             
-            # Buscamos nombres de columnas ignorando tildes
-            col_ubi = [c for c in df.columns if 'Ubic' in c][0]
-            col_fec = [c for c in df.columns if 'Fecha' in c][0]
+            # Limpieza de nombres de columnas
+            c_ubi = [c for c in df.columns if 'Ubic' in c][0]
+            c_fec = [c for c in df.columns if 'Fecha' in c][0]
             
             col_filt1, col_filt2 = st.columns(2)
-            kiosco_sel = col_filt1.selectbox("Seleccione Kiosco:", df[col_ubi].unique())
+            kiosco_sel = col_filt1.selectbox("Seleccione Kiosco:", df[c_ubi].unique())
             
-            df_kiosco = df[df[col_ubi] == kiosco_sel]
-            fecha_sel = col_filt2.selectbox("Seleccione Fecha:", df_kiosco[col_fec].unique())
+            df_kiosco = df[df[c_ubi] == kiosco_sel]
+            fecha_sel = col_filt2.selectbox("Seleccione Fecha:", df_kiosco[c_fec].unique())
             
-            reporte = df_kiosco[df_kiosco[col_fec] == fecha_sel].iloc[0]
+            reporte = df_kiosco[df_kiosco[c_fec] == fecha_sel].iloc[0]
             
-            st.markdown(f'<div class="report-box">', unsafe_allow_html=True)
-            st.write(f"### DETALLE DE INSPECCIÓN: {kiosco_sel}")
-            st.write(f"**Fecha:** {fecha_sel} | **Técnico:** {reporte.get('Técnico', 'N/A')}")
+            # --- DISEÑO DEL REPORTE V9 ---
+            st.markdown('<div class="report-box">', unsafe_allow_html=True)
+            st.subheader(f"📍 DETALLE: {kiosco_sel}")
+            st.write(f"**Fecha:** {fecha_sel} | **Responsable:** {reporte.get('Técnico', 'N/A')}")
             
-            # Secciones
-            st.markdown('<div class="section-header">⚙️ ESTADO DE ESTRUCTURA</div>', unsafe_allow_html=True)
+            # Sección 1: Estructura
+            st.markdown('<div class="section-header">⚙️ ESTRUCTURA</div>', unsafe_allow_html=True)
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Piloto Izq", reporte.get('Piloto Izquierdo', 'N/A'))
-            m2.metric("Copiloto Der", reporte.get('Copiloto Derecho', 'N/A'))
-            m3.metric("Delantera", reporte.get('Delantera', 'N/A'))
-            m4.metric("Posterior", reporte.get('Posterior', 'N/A'))
-            
-            st.markdown('<div class="section-header">🖥️ SISTEMAS IT</div>', unsafe_allow_html=True)
-            s1, s2, s3 = st.columns(3)
-            s1.metric("Totem Izq", reporte.get('Totem Izquierdo', 'N/A'))
-            s2.metric("Totem Der", reporte.get('Totem Derecho', 'N/A'))
-            s3.metric("TV Principal", reporte.get('TV Izquierdo', 'N/A'))
-
-            st.markdown('<div class="section-header">📝 COMENTARIOS GENERALES</div>', unsafe_allow_html=True)
-            st.info(reporte.get('Obs Generales', 'Sin observaciones
+            m2.metric("Copiloto Der", reporte.get('Copiloto Derecho', 'N
