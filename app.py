@@ -3,7 +3,7 @@ import requests
 import base64
 import pandas as pd
 
-# --- CONFIGURACIÓN DE IDENTIDAD KIOSCOS IA ---
+# --- IDENTIDAD KIOSCOS IA (BRANDBOOK) ---
 COLOR_BLUE_SEA = "#000059"
 COLOR_CIAN = "#66FBFC"
 COLOR_BLACK = "#000000"
@@ -17,7 +17,7 @@ KIOSCOS_OFICIALES = [
     "PASTIPAN JAVIER PRADO", "UNIVERSIDAD RICARDO PALMA", "SURCO WONG"
 ]
 
-st.set_page_config(page_title="Kioscos IA - Gestión Total", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="Kioscos IA - Gestión", layout="wide", page_icon="🚀")
 
 # --- CSS CORPORATIVO ---
 st.markdown(f"""
@@ -47,45 +47,31 @@ menu = st.sidebar.radio("MODALIDAD", ["📋 SUPERVISOR", "📊 REPORTES"])
 
 # --- MÓDULO 1: SUPERVISOR ---
 if menu == "📋 SUPERVISOR":
-    st.subheader("📝 Registro Técnico Completo")
+    st.subheader("📝 Registro Técnico")
     with st.form("form_total", clear_on_submit=False):
         c1, c2 = st.columns(2)
         tec = c1.text_input("TÉCNICO RESPONSABLE *")
         ubi = c2.selectbox("KIOSCO", KIOSCOS_OFICIALES)
         
-        st.markdown('<div class="section-header">🏗️ Estructura y Accesos</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🏗️ Estructura</div>', unsafe_allow_html=True)
         col1, col2, col3, col4 = st.columns(4)
-        p_izq = col1.radio("Piloto Izq", ["Perfecto", "Falla"])
-        c_der = col2.radio("Copiloto Der", ["Perfecto", "Falla"])
-        p_del = col3.radio("Delantera", ["Perfecto", "Falla"])
-        p_pos = col4.radio("Posterior", ["Perfecto", "Falla"])
+        p_izq, c_der = col1.radio("Piloto Izq", ["Perfecto", "Falla"]), col2.radio("Copiloto Der", ["Perfecto", "Falla"])
+        p_del, p_pos = col3.radio("Delantera", ["Perfecto", "Falla"]), col4.radio("Posterior", ["Perfecto", "Falla"])
         obs_p = st.text_area("Notas Estructura")
 
-        st.markdown('<div class="section-header">🖥️ Sistemas IT y Pantallas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🖥️ Sistemas IT</div>', unsafe_allow_html=True)
         it1, it2, it3, it4 = st.columns(4)
-        t_izq = it1.radio("Totem Izq", ["OK", "Falla"])
-        t_der = it2.radio("Totem Der", ["OK", "Falla"])
-        tv_izq = it3.radio("TV Izquierda", ["OK", "Falla"])
-        tv_der = it4.radio("TV Derecha", ["OK", "Falla"])
+        t_izq, t_der = it1.radio("Totem Izq", ["OK", "Falla"]), it2.radio("Totem Der", ["OK", "Falla"])
+        tv_izq, tv_der = it3.radio("TV Izq", ["OK", "Falla"]), it4.radio("TV Der", ["OK", "Falla"])
         p_360 = st.radio("PANTALLAS 360", ["OK", "Falla"], horizontal=True)
-        obs_it = st.text_area("Notas IT / Pantallas")
+        obs_it = st.text_area("Notas IT")
 
         st.markdown('<div class="section-header">🏠 Energía e Interiores</div>', unsafe_allow_html=True)
         e1, e2, e3, e4 = st.columns(4)
-        muebles = e1.radio("Muebles", ["OK", "Falla"])
-        cableado = e2.radio("Cableado", ["OK", "Falla"])
-        energia = e3.radio("Energía", ["OK", "Falla"])
-        ilumina = e4.radio("Iluminación", ["OK", "Falla"])
-        obs_int = st.text_area("Notas Interiores")
-
-        st.markdown('<div class="section-header">✨ Estética y Seguridad</div>', unsafe_allow_html=True)
-        cl1, cl2, cl3, cl4 = st.columns(4)
-        branding = cl1.radio("Branding", ["OK", "Dañado"])
-        l_int = cl2.radio("Limp. Int", ["Limpio", "Sucio"])
-        l_ext = cl3.radio("Limp. Ext", ["Limpio", "Sucio"])
-        camaras = cl4.radio("Cámaras", ["OK", "Falla"])
-
-        st.markdown('<div class="section-header">Finalización</div>', unsafe_allow_html=True)
+        muebles, cableado = e1.radio("Muebles", ["OK", "Falla"]), e2.radio("Cableado", ["OK", "Falla"])
+        energia, ilumina = e3.radio("Energía", ["OK", "Falla"]), e4.radio("Iluminación", ["OK", "Falla"])
+        
+        branding = st.radio("Branding", ["OK", "Dañado"], horizontal=True)
         obs_gen = st.text_area("COMENTARIOS GENERALES")
         fotos_u = st.file_uploader("Evidencia (Opcional)", accept_multiple_files=True)
 
@@ -93,7 +79,7 @@ if menu == "📋 SUPERVISOR":
 
     if submit:
         if not tec:
-            st.error("⚠️ El técnico es obligatorio.")
+            st.error("⚠️ El nombre del técnico es obligatorio.")
         else:
             with st.spinner("Sincronizando..."):
                 links = []
@@ -102,40 +88,36 @@ if menu == "📋 SUPERVISOR":
                         try:
                             b64 = base64.b64encode(img.read()).decode('utf-8')
                             res_img = requests.post("https://api.imgbb.com/1/upload", data={"key": IMGBB_API_KEY, "image": b64})
-                            if res_img.status_code == 200:
-                                links.append(res_img.json()['data']['url'])
+                            if res_img.status_code == 200: links.append(res_img.json()['data']['url'])
                         except: pass
                 
                 payload = {
                     "action": "insertar", "tecnico": tec, "ubicacion": ubi,
                     "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
                     "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina,
-                    "obs_int": obs_int, "p_360": p_360, "t_izq": t_izq, "t_der": t_der,
-                    "tv_izq": tv_izq, "tv_der": tv_der, "obs_pan": obs_it,
-                    "branding": branding, "l_int": l_int, "l_ext": l_ext, "camaras": camaras,
-                    "obs_gen": obs_gen, "fotos": ";".join(links)
+                    "p_360": p_360, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der,
+                    "obs_pan": obs_it, "branding": branding, "obs_gen": obs_gen, "fotos": ";".join(links)
                 }
                 try:
                     requests.post(URL_BRIDGE, json=payload, timeout=30)
-                    st.success("✅ ¡Reporte enviado!")
+                    st.success("✅ Reporte enviado.")
+                    st.balloons()
                 except: st.error("❌ Error de envío.")
 
 # --- MÓDULO 2: REPORTES ---
 else:
     st.subheader("📊 Historial de Inspecciones")
     try:
-        response = requests.get(URL_BRIDGE, timeout=35)
+        response = requests.get(URL_BRIDGE, timeout=30)
         data_json = response.json()
         if len(data_json) > 1:
             df = pd.DataFrame(data_json[1:], columns=data_json[0])
-            
-            # Filtro corregido (isin cerrado correctamente)
-            df_final = df[df['Ubicación'].isin(KIOSCOS_OFICIALES)]
+            df = df[df['Ubicación'].isin(KIOSCOS_OFICIALES)]
             
             c1, c2 = st.columns(2)
-            k_sel = c1.selectbox("Kiosco", df_final['Ubicación'].unique())
-            f_sel = c2.selectbox("Fecha", df_final[df_final['Ubicación'] == k_sel]['Fecha'].unique())
-            rep = df_final[(df_final['Ubicación'] == k_sel) & (df_final['Fecha'] == f_sel)].iloc[0]
+            k_sel = c1.selectbox("Kiosco", df['Ubicación'].unique())
+            f_sel = c2.selectbox("Fecha", df[df['Ubicación'] == k_sel]['Fecha'].unique())
+            rep = df[(df['Ubicación'] == k_sel) & (df['Fecha'] == f_sel)].iloc[0]
             
             st.markdown('<div class="report-card">', unsafe_allow_html=True)
             st.write(f"### 📍 {k_sel} - {f_sel}")
@@ -149,14 +131,27 @@ else:
             it4.metric("TV Der", rep.get('TV Derecha', 'N/A'))
             it5.metric("P-360", rep.get('Pantallas 360', 'N/A'))
             
-            st.markdown(f"**Notas IT:** <div class='text-wrap'>{rep.get('Obs Pantallas', 'N/A')}</div>", unsafe_allow_html=True)
+            # --- NOTAS IT ---
+            txt_it = rep.get('Obs Pantallas', 'N/A')
+            st.markdown(f"""**Notas IT:** <div class="text-wrap">{txt_it}</div>""", unsafe_allow_html=True)
 
-            st.markdown('<div class="section-header">🏠 INFRAESTRUCTURA Y ENERGÍA</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">🏠 INFRAESTRUCTURA</div>', unsafe_allow_html=True)
             ei1, ei2, ei3, ei4 = st.columns(4)
             ei1.metric("Muebles", rep.get('Muebles', 'N/A'))
             ei2.metric("Energía", rep.get('Energía', 'N/A'))
-            ei3.metric("Iluminación", rep.get('Iluminación', 'N/A'))
-            ei4.metric("Cámaras", rep.get('Cámaras Seguridad', 'N/A'))
+            ei3.metric("Luz", rep.get('Iluminación', 'N/A'))
+            ei4.metric("Branding", rep.get('Branding', 'N/A'))
             
-            st.write(f"**Puertas:** P.Izq: {rep.get('Piloto Izquierdo')} | C.Der: {rep.get('Copiloto Derecho')} | Del: {rep.get('Delantera')} | Post: {rep.get('Posterior')}")
-            st.markdown(f"**Notas Estructura:** <div class='text-wrap'>{rep.get('Obs Puertas', 'N
+            # --- NOTAS ESTRUCTURA ---
+            txt_p = rep.get('Obs Puertas', 'N/A')
+            st.markdown(f"""**Notas Estructura:** <div class="text-wrap">{txt_p}</div>""", unsafe_allow_html=True)
+
+            st.markdown('<div class="section-header">📝 COMENTARIOS GENERALES</div>', unsafe_allow_html=True)
+            txt_gen = rep.get('Obs Generales', 'N/A')
+            st.markdown(f"""<div class="text-wrap">{txt_gen}</div>""", unsafe_allow_html=True)
+            
+            if rep.get('Fotos'):
+                st.markdown('<div class="section-header">📸 EVIDENCIA</div>', unsafe_allow_html=True)
+                st.image(str(rep['Fotos']).split(";"), use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+    except: st.error("Error al cargar datos.")
