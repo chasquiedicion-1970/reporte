@@ -3,7 +3,7 @@ import requests
 import base64
 import pandas as pd
 
-# --- IDENTIDAD KIOSCOS IA (BRANDBOOK) ---
+# --- CONFIGURACIÓN DE IDENTIDAD KIOSCOS IA ---
 COLOR_BLUE_SEA = "#000059"
 COLOR_CIAN = "#66FBFC"
 COLOR_BLACK = "#000000"
@@ -17,49 +17,120 @@ KIOSCOS_OFICIALES = [
     "PASTIPAN JAVIER PRADO", "UNIVERSIDAD RICARDO PALMA", "SURCO WONG"
 ]
 
-st.set_page_config(page_title="Kioscos IA - Gestión", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="Kioscos IA - Operaciones", layout="wide", page_icon="🚀")
 
-# --- CSS CORPORATIVO ---
+# --- LÓGICA DE NAVEGACIÓN (SESSION STATE) ---
+if 'page' not in st.session_state:
+    st.session_state.page = 'HOME'
+
+def change_page(page_name):
+    st.session_state.page = page_name
+
+# --- CSS AVANZADO (DISEÑO CORPORATIVO) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {COLOR_BLACK}; color: white; }}
+    
+    /* Header Principal */
     .main-header {{
-        background: linear-gradient(135deg, {COLOR_BLUE_SEA} 0%, #1900AF 100%);
-        padding: 2rem; border-radius: 0 0 25px 25px; border-bottom: 3px solid {COLOR_CIAN};
-        text-align: center; margin-bottom: 2rem;
+        background: linear-gradient(90deg, {COLOR_BLUE_SEA} 0%, #1900AF 100%);
+        padding: 3rem; border-radius: 0 0 40px 40px; border-bottom: 4px solid {COLOR_CIAN};
+        text-align: center; margin-bottom: 3rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }}
-    .section-header {{
-        color: {COLOR_CIAN}; font-weight: bold; text-transform: uppercase;
-        border-bottom: 2px solid {COLOR_CIAN}; padding-bottom: 5px; margin: 25px 0 10px 0;
+    
+    /* Tarjetas de Selección en Home */
+    .option-card {{
+        background-color: {COLOR_BLUE_SEA};
+        padding: 40px; border-radius: 25px; border: 2px solid #1900AF;
+        text-align: center; transition: 0.4s; height: 350px;
+        display: flex; flex-direction: column; justify-content: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }}
-    .report-card {{ 
-        background-color: {COLOR_BLUE_SEA} !important; 
-        padding: 20px; border-radius: 15px; border: 1px solid #1900AF; margin-bottom: 15px;
+    .option-card:hover {{ border-color: {COLOR_CIAN}; transform: translateY(-10px); }}
+    
+    /* Botones de Navegación */
+    div.stButton > button {{
+        background: {COLOR_CIAN}; color: {COLOR_BLACK};
+        font-weight: 800; border-radius: 50px; border: none;
+        padding: 15px 40px; width: 100%; transition: 0.3s;
+        text-transform: uppercase; letter-spacing: 1px;
     }}
-    .text-wrap {{ white-space: pre-wrap; background: #000000; padding: 12px; border-radius: 8px; border: 1px solid #1900AF; color: #cbd5e1; }}
-    [data-testid="stMetricValue"] {{ color: {COLOR_CIAN} !important; font-size: 1.5rem !important; }}
+    div.stButton > button:hover {{ background: white; box-shadow: 0 0 20px {COLOR_CIAN}; }}
+    
+    /* Botón Volver */
+    .back-btn button {{ background: transparent !important; color: {COLOR_CIAN} !important; border: 1px solid {COLOR_CIAN} !important; }}
+
+    /* Estilo de Secciones e Inputs */
+    .section-header {{ color: {COLOR_CIAN}; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid {COLOR_CIAN}; padding-bottom: 5px; margin: 25px 0 10px 0; }}
+    .report-card {{ background-color: {COLOR_BLUE_SEA}; padding: 30px; border-radius: 20px; border: 1px solid #1900AF; }}
+    .text-wrap {{ white-space: pre-wrap; background: #000; padding: 15px; border-radius: 10px; border: 1px solid #1900AF; color: #cbd5e1; }}
+    [data-testid="stMetricValue"] {{ color: {COLOR_CIAN} !important; }}
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown(f'<div class="main-header"><h1>KIOSCOS IΛ</h1><p style="color:{COLOR_CIAN}; font-weight:bold;">EL FUTURO EN CADA ESQUINA</p></div>', unsafe_allow_html=True)
+# --- CABECERA COMPARTIDA ---
+st.markdown(f'''
+    <div class="main-header">
+        <h1>KIOSCOS IΛ</h1>
+        <p style="color:{COLOR_CIAN}; font-weight:bold; letter-spacing:2px;">EL FUTURO EN CADA ESQUINA</p>
+    </div>
+''', unsafe_allow_html=True)
 
-menu = st.sidebar.radio("MODALIDAD", ["📋 SUPERVISOR", "📊 REPORTES"])
-
-# --- MÓDULO 1: SUPERVISOR ---
-if menu == "📋 SUPERVISOR":
-    st.subheader("📝 Registro Técnico")
-    with st.form("form_total", clear_on_submit=False):
+# --- PANTALLA 1: HOME (MENÚ PRINCIPAL) ---
+if st.session_state.page == 'HOME':
+    st.write("<br><br>", unsafe_allow_html=True)
+    col_left, col_mid, col_right = st.columns([1, 4, 1])
+    
+    with col_mid:
         c1, c2 = st.columns(2)
-        tec = c1.text_input("TÉCNICO RESPONSABLE *")
-        ubi = c2.selectbox("KIOSCO", KIOSCOS_OFICIALES)
+        
+        with c1:
+            st.markdown(f'''
+                <div class="option-card">
+                    <h2 style="color:{COLOR_CIAN};">📋 SUPERVISOR</h2>
+                    <p>Ingreso técnico de infraestructura,<br>estado de tótems y evidencia.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+            if st.button("INGRESAR DATOS"):
+                change_page('SUPERVISOR')
+                st.rerun()
+
+        with c2:
+            st.markdown(f'''
+                <div class="option-card">
+                    <h2 style="color:{COLOR_CIAN};">📊 REPORTES</h2>
+                    <p>Consulta de historial,<br>métricas y auditoría de puntos.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+            if st.button("CONTROL DE REPORTES"):
+                change_page('REPORTES')
+                st.rerun()
+
+# --- PANTALLA 2: SUPERVISOR ---
+elif st.session_state.page == 'SUPERVISOR':
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("← VOLVER AL MENÚ"):
+        change_page('HOME')
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.subheader("📝 Registro Técnico de Módulo")
+    
+    with st.form("form_sup"):
+        f1, f2 = st.columns(2)
+        tec = f1.text_input("TÉCNICO RESPONSABLE *")
+        ubi = f2.selectbox("KIOSCO", KIOSCOS_OFICIALES)
         
         st.markdown('<div class="section-header">🏗️ Estructura</div>', unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        p_izq, c_der = col1.radio("Piloto Izq", ["Perfecto", "Falla"]), col2.radio("Copiloto Der", ["Perfecto", "Falla"])
-        p_del, p_pos = col3.radio("Delantera", ["Perfecto", "Falla"]), col4.radio("Posterior", ["Perfecto", "Falla"])
+        cp1, cp2, cp3, cp4 = st.columns(4)
+        p_izq = cp1.radio("Piloto Izq", ["Perfecto", "Falla"])
+        c_der = cp2.radio("Copiloto Der", ["Perfecto", "Falla"])
+        p_del = cp3.radio("Delantera", ["Perfecto", "Falla"])
+        p_pos = cp4.radio("Posterior", ["Perfecto", "Falla"])
         obs_p = st.text_area("Notas Estructura")
 
-        st.markdown('<div class="section-header">🖥️ Sistemas IT</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🖥️ Sistemas IT & Pantallas</div>', unsafe_allow_html=True)
         it1, it2, it3, it4 = st.columns(4)
         t_izq, t_der = it1.radio("Totem Izq", ["OK", "Falla"]), it2.radio("Totem Der", ["OK", "Falla"])
         tv_izq, tv_der = it3.radio("TV Izq", ["OK", "Falla"]), it4.radio("TV Der", ["OK", "Falla"])
@@ -71,7 +142,7 @@ if menu == "📋 SUPERVISOR":
         muebles, cableado = e1.radio("Muebles", ["OK", "Falla"]), e2.radio("Cableado", ["OK", "Falla"])
         energia, ilumina = e3.radio("Energía", ["OK", "Falla"]), e4.radio("Iluminación", ["OK", "Falla"])
         
-        branding = st.radio("Branding", ["OK", "Dañado"], horizontal=True)
+        st.markdown('<div class="section-header">Finalización</div>', unsafe_allow_html=True)
         obs_gen = st.text_area("COMENTARIOS GENERALES")
         fotos_u = st.file_uploader("Evidencia (Opcional)", accept_multiple_files=True)
 
@@ -81,77 +152,15 @@ if menu == "📋 SUPERVISOR":
         if not tec:
             st.error("⚠️ El nombre del técnico es obligatorio.")
         else:
-            with st.spinner("Sincronizando..."):
+            with st.spinner("Sincronizando con base de datos..."):
                 links = []
                 if fotos_u:
                     for img in fotos_u:
                         try:
                             b64 = base64.b64encode(img.read()).decode('utf-8')
-                            res_img = requests.post("https://api.imgbb.com/1/upload", data={"key": IMGBB_API_KEY, "image": b64})
-                            if res_img.status_code == 200: links.append(res_img.json()['data']['url'])
+                            res = requests.post("https://api.imgbb.com/1/upload", data={"key": IMGBB_API_KEY, "image": b64})
+                            if res.status_code == 200: links.append(res.json()['data']['url'])
                         except: pass
                 
                 payload = {
-                    "action": "insertar", "tecnico": tec, "ubicacion": ubi,
-                    "p_izq": p_izq, "c_der": c_der, "p_del": p_del, "p_pos": p_pos, "obs_p": obs_p,
-                    "muebles": muebles, "cableado": cableado, "energia": energia, "iluminacion": ilumina,
-                    "p_360": p_360, "t_izq": t_izq, "t_der": t_der, "tv_izq": tv_izq, "tv_der": tv_der,
-                    "obs_pan": obs_it, "branding": branding, "obs_gen": obs_gen, "fotos": ";".join(links)
-                }
-                try:
-                    requests.post(URL_BRIDGE, json=payload, timeout=30)
-                    st.success("✅ Reporte enviado.")
-                    st.balloons()
-                except: st.error("❌ Error de envío.")
-
-# --- MÓDULO 2: REPORTES ---
-else:
-    st.subheader("📊 Historial de Inspecciones")
-    try:
-        response = requests.get(URL_BRIDGE, timeout=30)
-        data_json = response.json()
-        if len(data_json) > 1:
-            df = pd.DataFrame(data_json[1:], columns=data_json[0])
-            df = df[df['Ubicación'].isin(KIOSCOS_OFICIALES)]
-            
-            c1, c2 = st.columns(2)
-            k_sel = c1.selectbox("Kiosco", df['Ubicación'].unique())
-            f_sel = c2.selectbox("Fecha", df[df['Ubicación'] == k_sel]['Fecha'].unique())
-            rep = df[(df['Ubicación'] == k_sel) & (df['Fecha'] == f_sel)].iloc[0]
-            
-            st.markdown('<div class="report-card">', unsafe_allow_html=True)
-            st.write(f"### 📍 {k_sel} - {f_sel}")
-            st.write(f"👷 **Técnico:** {rep.get('Técnico')}")
-            
-            st.markdown('<div class="section-header">🖥️ SISTEMAS IT & PANTALLAS</div>', unsafe_allow_html=True)
-            it1, it2, it3, it4, it5 = st.columns(5)
-            it1.metric("Totem Izq", rep.get('Totem Izquierdo', 'N/A'))
-            it2.metric("Totem Der", rep.get('Totem Derecho', 'N/A'))
-            it3.metric("TV Izq", rep.get('TV Izquierdo', 'N/A'))
-            it4.metric("TV Der", rep.get('TV Derecha', 'N/A'))
-            it5.metric("P-360", rep.get('Pantallas 360', 'N/A'))
-            
-            # --- NOTAS IT ---
-            txt_it = rep.get('Obs Pantallas', 'N/A')
-            st.markdown(f"""**Notas IT:** <div class="text-wrap">{txt_it}</div>""", unsafe_allow_html=True)
-
-            st.markdown('<div class="section-header">🏠 INFRAESTRUCTURA</div>', unsafe_allow_html=True)
-            ei1, ei2, ei3, ei4 = st.columns(4)
-            ei1.metric("Muebles", rep.get('Muebles', 'N/A'))
-            ei2.metric("Energía", rep.get('Energía', 'N/A'))
-            ei3.metric("Luz", rep.get('Iluminación', 'N/A'))
-            ei4.metric("Branding", rep.get('Branding', 'N/A'))
-            
-            # --- NOTAS ESTRUCTURA ---
-            txt_p = rep.get('Obs Puertas', 'N/A')
-            st.markdown(f"""**Notas Estructura:** <div class="text-wrap">{txt_p}</div>""", unsafe_allow_html=True)
-
-            st.markdown('<div class="section-header">📝 COMENTARIOS GENERALES</div>', unsafe_allow_html=True)
-            txt_gen = rep.get('Obs Generales', 'N/A')
-            st.markdown(f"""<div class="text-wrap">{txt_gen}</div>""", unsafe_allow_html=True)
-            
-            if rep.get('Fotos'):
-                st.markdown('<div class="section-header">📸 EVIDENCIA</div>', unsafe_allow_html=True)
-                st.image(str(rep['Fotos']).split(";"), use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-    except: st.error("Error al cargar datos.")
+                    "
